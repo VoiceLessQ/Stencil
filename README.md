@@ -27,3 +27,7 @@ Client-side, Fabric, Minecraft 26.3. Ghost colour and opacity, radius, shape and
 Spawn proofing tool for Fabric. Stencil marks every spot around you where a mob could spawn with a ghost block, then places the block you chose there from your inventory while you hold the place key. Pick a torch or lantern and it plans lights for you instead, spaced so no spot stays dark enough to spawn, and Place all sets them in one go.
 
 Client-side only. Works on servers, though placement stays within your normal reach unless you have op. Settings screen with hotkey capture, ghost colour and opacity, area shape and radius.
+
+## License
+
+GPL-3.0. Forks and modified builds must stay open under the same license and keep the credit. See [LICENSE](LICENSE).
