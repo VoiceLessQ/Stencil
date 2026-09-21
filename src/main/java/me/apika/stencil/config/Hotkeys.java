@@ -64,8 +64,8 @@ public class Hotkeys
 	public static final Hotkey SELECTION_SHRINK_HOTKEY = new Hotkey("selectionShrink", "");
 	public static final Hotkey SET_AREA_ORIGIN = new Hotkey("setAreaOrigin", "");
 	public static final Hotkey SPAWN_PROOF_ADJUST_SIDE = new Hotkey("spawnProofAdjustSide", "LEFT_ALT");
-	public static final Hotkey SPAWN_PROOF_MODE = new Hotkey("spawnProofMode", "M,C");
-	public static final Hotkey SPAWN_PROOF_SHAPE = new Hotkey("spawnProofShape", "M,V");
+	public static final Hotkey SPAWN_PROOF_MODE = new Hotkey("spawnProofMode", "M,N");
+	public static final Hotkey SPAWN_PROOF_SHAPE = new Hotkey("spawnProofShape", "M,B");
 	public static final Hotkey SPAWN_PROOF_RADIUS_DECREASE = new Hotkey("spawnProofRadiusDecrease", "LEFT_SHIFT,DOWN");
 	public static final Hotkey SPAWN_PROOF_RADIUS_INCREASE = new Hotkey("spawnProofRadiusIncrease", "LEFT_SHIFT,UP");
 	public static final Hotkey SPAWN_PROOF_TOGGLE = new Hotkey("spawnProofToggle", "M,X");

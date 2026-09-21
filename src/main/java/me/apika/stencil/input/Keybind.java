@@ -132,6 +132,30 @@ public class Keybind
 		return "key.keyboard." + name.toLowerCase().replace('_', '.');
 	}
 
+	/** The reverse: "key.keyboard.left.shift" to "LEFT_SHIFT", "key.mouse.right" to "BUTTON_2". */
+	public static String fromVanillaName(String name)
+	{
+		if (name.startsWith("key.mouse."))
+		{
+			return switch (name)
+			{
+				case "key.mouse.left" -> "BUTTON_1";
+				case "key.mouse.right" -> "BUTTON_2";
+				case "key.mouse.middle" -> "BUTTON_3";
+				default -> "BUTTON_" + name.substring(10);
+			};
+		}
+
+		if (name.startsWith("key.keyboard."))
+		{
+			name = name.substring(13);
+		}
+
+		name = name.toUpperCase().replace('.', '_');
+
+		return name.startsWith("KEYPAD_") ? "KP_" + name.substring(7) : name;
+	}
+
 	private static boolean isDown(InputConstants.Key key)
 	{
 		if (key.getType() == InputConstants.Type.MOUSE)

@@ -357,6 +357,7 @@ public class Configs
 			Generic.SPAWN_PROOF_LAYER_RADIUS,
 			Generic.SPAWN_PROOF_RADIUS,
 			Colors.SPAWN_PROOF_GHOST_COLOR,
+			Hotkeys.OPEN_GUI_SETTINGS,
 			Hotkeys.SPAWN_PROOF_TOGGLE,
 			Hotkeys.SPAWN_PROOF_MODE,
 			Hotkeys.SPAWN_PROOF_SHAPE,

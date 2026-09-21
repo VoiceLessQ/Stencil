@@ -40,6 +40,7 @@ public class SpawnProofArea
 	private int south;
 	private int east;
 	private int west;
+	private int baseRadius;
 	private Shape shape = Shape.SQUARE;
 
 	public SpawnProofArea(int radius)
@@ -83,8 +84,15 @@ public class SpawnProofArea
 		}
 	}
 
+	/** The radius the sides were last reset to, before any per-side adjustment. */
+	public int getBaseRadius()
+	{
+		return this.baseRadius;
+	}
+
 	public void setAll(int radius)
 	{
+		this.baseRadius = radius;
 		this.north = this.south = this.east = this.west = Math.clamp(radius, 0, MAX_EXTENT);
 	}
 

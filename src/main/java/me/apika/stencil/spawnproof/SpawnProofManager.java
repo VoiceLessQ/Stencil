@@ -142,6 +142,7 @@ public class SpawnProofManager
 
 		BlockPos center = mc.player.blockPosition();
 		++this.ticksSinceScan;
+		this.syncRadius();
 
 		if (this.dirty ||
 			center.equals(this.lastCenter) == false ||
@@ -209,6 +210,19 @@ public class SpawnProofManager
 			this.getArea().setAll(radius.get());
 			this.dirty = true;
 			mc.player.sendOverlayMessage(Component.literal(this.mode.getDisplayName() + " radius: " + radius.get()));
+		}
+	}
+
+	/** Picks up a radius edited in the settings screen, which bypasses the hotkeys. */
+	private void syncRadius()
+	{
+		SpawnProofArea area = this.getArea();
+		int radius = this.mode.getRadius().get();
+
+		if (area.getBaseRadius() != radius)
+		{
+			area.setAll(radius);
+			this.dirty = true;
 		}
 	}
 
