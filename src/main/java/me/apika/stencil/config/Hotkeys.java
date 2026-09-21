@@ -63,6 +63,12 @@ public class Hotkeys
 	public static final Hotkey SELECTION_MODE_CYCLE = new Hotkey("selectionModeCycle", "LEFT_CONTROL,M");
 	public static final Hotkey SELECTION_SHRINK_HOTKEY = new Hotkey("selectionShrink", "");
 	public static final Hotkey SET_AREA_ORIGIN = new Hotkey("setAreaOrigin", "");
+	public static final Hotkey SPAWN_PROOF_ADJUST_SIDE = new Hotkey("spawnProofAdjustSide", "LEFT_ALT");
+	public static final Hotkey SPAWN_PROOF_MODE = new Hotkey("spawnProofMode", "M,C");
+	public static final Hotkey SPAWN_PROOF_SHAPE = new Hotkey("spawnProofShape", "M,V");
+	public static final Hotkey SPAWN_PROOF_RADIUS_DECREASE = new Hotkey("spawnProofRadiusDecrease", "LEFT_SHIFT,DOWN");
+	public static final Hotkey SPAWN_PROOF_RADIUS_INCREASE = new Hotkey("spawnProofRadiusIncrease", "LEFT_SHIFT,UP");
+	public static final Hotkey SPAWN_PROOF_TOGGLE = new Hotkey("spawnProofToggle", "M,X");
 	public static final Hotkey SET_SELECTION_BOX_POSITION_1 = new Hotkey("setSelectionBoxPosition1", "");
 	public static final Hotkey SET_SELECTION_BOX_POSITION_2 = new Hotkey("setSelectionBoxPosition2", "");
 	public static final Hotkey TOGGLE_ALL_RENDERING = new Hotkey("toggleAllRendering", "M,R");
@@ -140,6 +146,12 @@ public class Hotkeys
 			SELECTION_MODE_CYCLE,
 			SELECTION_SHRINK_HOTKEY,
 			SET_AREA_ORIGIN,
+			SPAWN_PROOF_ADJUST_SIDE,
+			SPAWN_PROOF_MODE,
+			SPAWN_PROOF_RADIUS_DECREASE,
+			SPAWN_PROOF_RADIUS_INCREASE,
+			SPAWN_PROOF_SHAPE,
+			SPAWN_PROOF_TOGGLE,
 			SET_SELECTION_BOX_POSITION_1,
 			SET_SELECTION_BOX_POSITION_2,
 			TOGGLE_ALL_RENDERING,

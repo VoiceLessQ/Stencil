@@ -97,6 +97,8 @@ public class Configs
 		public static final Bool RENDER_MATERIALS_IN_GUI = new Bool(GENERIC, "renderMaterialListInGuis", true);
 		public static final Bool RENDER_THREAD_NO_TIMEOUT = new Bool(GENERIC, "renderThreadNoTimeout", true);
 		public static final Bool SIGN_TEXT_PASTE = new Bool(GENERIC, "signTextPaste", true);
+		public static final Int SPAWN_PROOF_LAYER_RADIUS = new Int(GENERIC, "spawnProofLayerRadius", 4, 1, 32);
+		public static final Int SPAWN_PROOF_RADIUS = new Int(GENERIC, "spawnProofRadius", 4, 1, 16);
 		public static final Str TOOL_ITEM = new Str(GENERIC, "toolItem", "minecraft:stick");
 		public static final Bool TOOL_ITEM_ENABLED = new Bool(GENERIC, "toolItemEnabled", true);
 		public static final Str TOOL_ITEM_COMPONENTS = new Str(GENERIC, "toolItemComponents", "empty");
@@ -167,6 +169,8 @@ public class Configs
 				CUSTOM_SCHEMATIC_BASE_DIRECTORY,
 				EASY_PLACE_SWAP_INTERVAL,
 				PICK_BLOCKABLE_SLOTS,
+				SPAWN_PROOF_LAYER_RADIUS,
+				SPAWN_PROOF_RADIUS,
 				TOOL_ITEM,
 				TOOL_ITEM_COMPONENTS
 		);
@@ -319,6 +323,7 @@ public class Configs
 		public static final Color SCHEMATIC_OVERLAY_COLOR_MISSING = new Color(COLORS, "schematicOverlayColorMissing", "#2C33B3E6");
 		public static final Color SCHEMATIC_OVERLAY_COLOR_WRONG_BLOCK = new Color(COLORS, "schematicOverlayColorWrongBlock", "#4CFF3333");
 		public static final Color SCHEMATIC_OVERLAY_COLOR_WRONG_STATE = new Color(COLORS, "schematicOverlayColorWrongState", "#4CFF9010");
+		public static final Color SPAWN_PROOF_GHOST_COLOR = new Color(COLORS, "spawnProofGhostColor", "#60FF8800");
 
 		public static final List<ConfigOption<?>> OPTIONS = List.of(
 				AREA_SELECTION_BOX_SIDE_COLOR,
@@ -330,7 +335,8 @@ public class Configs
 				SCHEMATIC_OVERLAY_COLOR_EXTRA,
 				SCHEMATIC_OVERLAY_COLOR_MISSING,
 				SCHEMATIC_OVERLAY_COLOR_WRONG_BLOCK,
-				SCHEMATIC_OVERLAY_COLOR_WRONG_STATE
+				SCHEMATIC_OVERLAY_COLOR_WRONG_STATE,
+				SPAWN_PROOF_GHOST_COLOR
 		);
 	}
 
@@ -347,6 +353,15 @@ public class Configs
 	private static final List<ConfigOption<?>> IMPLEMENTED = List.of(
 			Generic.DEBUG_LOGGING,
 			Generic.CUSTOM_SCHEMATIC_BASE_DIRECTORY_ENABLED,
-			Generic.CUSTOM_SCHEMATIC_BASE_DIRECTORY
+			Generic.CUSTOM_SCHEMATIC_BASE_DIRECTORY,
+			Generic.SPAWN_PROOF_LAYER_RADIUS,
+			Generic.SPAWN_PROOF_RADIUS,
+			Colors.SPAWN_PROOF_GHOST_COLOR,
+			Hotkeys.SPAWN_PROOF_TOGGLE,
+			Hotkeys.SPAWN_PROOF_MODE,
+			Hotkeys.SPAWN_PROOF_SHAPE,
+			Hotkeys.SPAWN_PROOF_ADJUST_SIDE,
+			Hotkeys.SPAWN_PROOF_RADIUS_INCREASE,
+			Hotkeys.SPAWN_PROOF_RADIUS_DECREASE
 	);
 }
