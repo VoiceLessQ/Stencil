@@ -14,20 +14,9 @@ Stencil is just a spawn proofing mod at the moment.
 
 See [CHANGELOG.md](CHANGELOG.md) for the version history.
 
-## Modrinth description
 
 Stencil shows you where mobs can spawn and helps you fix it. Turn on the overlay and every dark, spawnable spot near you gets a ghost block. Pick any block that stops spawns, hold the place key and walk; the ghosts fill in from your inventory as you go.
 
 Choose a torch or lantern instead and the ghosts turn into a light plan: the fewest lights that leave nothing around you dark enough to spawn, spaced out on open ground and packed in where walls block the glow. Place all puts them down in one go.
 
 Client-side, Fabric, Minecraft 26.3. Ghost colour and opacity, radius, shape and every hotkey are in the settings screen.
-
-## CurseForge description
-
-Spawn proofing tool for Fabric. Stencil marks every spot around you where a mob could spawn with a ghost block, then places the block you chose there from your inventory while you hold the place key. Pick a torch or lantern and it plans lights for you instead, spaced so no spot stays dark enough to spawn, and Place all sets them in one go.
-
-Client-side only. Works on servers, though placement stays within your normal reach unless you have op. Settings screen with hotkey capture, ghost colour and opacity, area shape and radius.
-
-## License
-
-GPL-3.0. Forks and modified builds must stay open under the same license and keep the credit. See [LICENSE](LICENSE).
