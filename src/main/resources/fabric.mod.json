@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "stencil",
+	"version": "${version}",
+	"name": "Stencil",
+	"description": "Client-side schematic overlay: load a build, see it as a ghost in the world, and fill it in.",
+	"authors": [
+		"NoZeroG"
+	],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"me.apika.stencil.StencilClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": ">=26.3 <26.4",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
