@@ -1,5 +1,6 @@
 package me.apika.stencil.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import me.apika.stencil.config.ConfigOption;
 import me.apika.stencil.config.ConfigOptionValue;
 import net.minecraft.client.Minecraft;
@@ -32,11 +33,11 @@ public class CycleWidget extends StencilWidget
 			return false;
 		}
 
-		if (event.button() == 0)
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT)
 		{
 			this.option.cycle(true);
 		}
-		else if (event.button() == 1)
+		else if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT)
 		{
 			this.option.cycle(false);
 		}

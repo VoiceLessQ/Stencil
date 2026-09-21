@@ -3,6 +3,7 @@ package me.apika.stencil.spawnproof;
 import java.util.HashSet;
 import java.util.Set;
 
+import me.apika.stencil.config.Configs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.level.Level;
@@ -108,12 +109,16 @@ public class SpawnProofScanner
 			return false;
 		}
 
-		BlockPos above = pos.above();
-		BlockState stateAbove = world.getBlockState(above);
-
-		if (NaturalSpawner.isValidEmptySpawnBlock(world, above, stateAbove, stateAbove.getFluidState(), EntityTypes.ZOMBIE) == false)
+		// Tall mobs need a second free block; spiders and other short mobs do not.
+		if (Configs.Generic.SPAWN_PROOF_LOW_GAPS.getValue() == false)
 		{
-			return false;
+			BlockPos above = pos.above();
+			BlockState stateAbove = world.getBlockState(above);
+
+			if (NaturalSpawner.isValidEmptySpawnBlock(world, above, stateAbove, stateAbove.getFluidState(), EntityTypes.ZOMBIE) == false)
+			{
+				return false;
+			}
 		}
 
 		return blockLight.getLightValue(pos) == 0;

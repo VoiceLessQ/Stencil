@@ -63,7 +63,11 @@ public class Hotkeys
 	public static final Hotkey SELECTION_MODE_CYCLE = new Hotkey("selectionModeCycle", "LEFT_CONTROL,M");
 	public static final Hotkey SELECTION_SHRINK_HOTKEY = new Hotkey("selectionShrink", "");
 	public static final Hotkey SET_AREA_ORIGIN = new Hotkey("setAreaOrigin", "");
-	public static final Hotkey SPAWN_PROOF_ADJUST_SIDE = new Hotkey("spawnProofAdjustSide", "LEFT_ALT");
+	public static final Hotkey TOOL_SELECT = new Hotkey("toolSelect", "LEFT_CONTROL");
+	public static final Hotkey TOOL_PLACE_BLOCKS = new Hotkey("toolPlaceBlocks", "");
+	public static final Hotkey TOOL_PLACE_ALL = new Hotkey("toolPlaceAll", "V");
+	public static final Hotkey TOOL_CHANGE_BLOCK = new Hotkey("toolChangeBlock", "C");
+	public static final Hotkey TOOL_EXTEND_SIDE = new Hotkey("toolExtendSide", "LEFT_ALT");
 	public static final Hotkey SPAWN_PROOF_MODE = new Hotkey("spawnProofMode", "M,N");
 	public static final Hotkey SPAWN_PROOF_SHAPE = new Hotkey("spawnProofShape", "M,B");
 	public static final Hotkey SPAWN_PROOF_RADIUS_DECREASE = new Hotkey("spawnProofRadiusDecrease", "LEFT_SHIFT,DOWN");
@@ -146,7 +150,11 @@ public class Hotkeys
 			SELECTION_MODE_CYCLE,
 			SELECTION_SHRINK_HOTKEY,
 			SET_AREA_ORIGIN,
-			SPAWN_PROOF_ADJUST_SIDE,
+			TOOL_SELECT,
+			TOOL_PLACE_BLOCKS,
+			TOOL_PLACE_ALL,
+			TOOL_CHANGE_BLOCK,
+			TOOL_EXTEND_SIDE,
 			SPAWN_PROOF_MODE,
 			SPAWN_PROOF_RADIUS_DECREASE,
 			SPAWN_PROOF_RADIUS_INCREASE,

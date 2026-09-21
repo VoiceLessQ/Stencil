@@ -1,13 +1,16 @@
 package me.apika.stencil.input;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
+import me.apika.stencil.StencilClient;
 import me.apika.stencil.config.ConfigOption.Hotkey;
+import me.apika.stencil.config.Configs;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.MouseHandler;
 
 /**
  * Polls the keys of one {@link Hotkey} once per client tick. The key string is
@@ -19,6 +22,8 @@ import net.minecraft.client.MouseHandler;
  */
 public class Keybind
 {
+	private static final Set<Integer> pressedMouseButtons = new HashSet<>();
+
 	private final Hotkey hotkey;
 	private String parsedKeys = null;
 	private final List<InputConstants.Key> keys = new ArrayList<>();
@@ -156,19 +161,29 @@ public class Keybind
 		return name.startsWith("KEYPAD_") ? "KP_" + name.substring(7) : name;
 	}
 
+	/** Fed by the MouseHandler mixin on every button press and release. */
+	public static void onMouseButton(int button, boolean pressed)
+	{
+		if (Configs.Generic.DEBUG_LOGGING.getValue())
+		{
+			StencilClient.LOGGER.info("mouse button={} pressed={}", button, pressed);
+		}
+
+		if (pressed)
+		{
+			pressedMouseButtons.add(button);
+		}
+		else
+		{
+			pressedMouseButtons.remove(button);
+		}
+	}
+
 	private static boolean isDown(InputConstants.Key key)
 	{
 		if (key.getType() == InputConstants.Type.MOUSE)
 		{
-			MouseHandler mouse = Minecraft.getInstance().mouseHandler;
-
-			return switch (key.getValue())
-			{
-				case InputConstants.MOUSE_BUTTON_LEFT -> mouse.isLeftPressed();
-				case InputConstants.MOUSE_BUTTON_RIGHT -> mouse.isRightPressed();
-				case InputConstants.MOUSE_BUTTON_MIDDLE -> mouse.isMiddlePressed();
-				default -> false;
-			};
+			return pressedMouseButtons.contains(key.getValue());
 		}
 
 		return InputConstants.isKeyDown(key.getValue());

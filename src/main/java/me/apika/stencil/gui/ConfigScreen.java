@@ -3,13 +3,16 @@ package me.apika.stencil.gui;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalDouble;
+import java.util.Locale;
 import java.util.OptionalInt;
+import java.util.regex.Pattern;
 
 import me.apika.stencil.config.ConfigOption;
 import me.apika.stencil.config.ConfigStorage;
 import me.apika.stencil.config.Configs;
 import me.apika.stencil.config.Hotkeys;
 import me.apika.stencil.input.Keybind;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -17,6 +20,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 
@@ -24,7 +28,8 @@ import net.minecraft.network.chat.Component;
  * The settings screen: a row of category tabs, then one row per option with
  * its name on the left, an editor in the middle and a reset button on the
  * right. Values apply as they are changed and the file is written on close.
- * Options for features that do not exist yet are greyed out.
+ * Options for features that do not exist yet are greyed out. The search box
+ * filters every tab's options by name.
  */
 public class ConfigScreen extends Screen
 {
@@ -43,9 +48,12 @@ public class ConfigScreen extends Screen
 	private static final int WIDGET_HEIGHT = 20;
 	private static final int RESET_WIDTH = 44;
 	private static final int SWATCH_WIDTH = 16;
+	private static final int SEARCH_WIDTH = 120;
+	private static final Pattern COLOR_PATTERN = Pattern.compile("#?[0-9a-fA-F]{6}([0-9a-fA-F]{2})?");
 
 	private static final Keybind OPEN_KEY = new Keybind(Hotkeys.OPEN_GUI_SETTINGS);
 	private static Tab lastTab = Tab.GENERIC;
+	private static String lastSearch = "";
 
 	private enum Tab
 	{
@@ -70,6 +78,7 @@ public class ConfigScreen extends Screen
 
 	private final List<Row> rows = new ArrayList<>();
 	private Tab tab = lastTab;
+	private String search = lastSearch;
 	private int listTop;
 	private int listBottom;
 	private int scroll;
@@ -111,14 +120,71 @@ public class ConfigScreen extends Screen
 			x += width + 2;
 		}
 
+		EditBox searchBox = new EditBox(this.font, this.width - MARGIN - SEARCH_WIDTH, TAB_Y, SEARCH_WIDTH, TAB_HEIGHT, Component.literal("Search"));
+		searchBox.setHint(Component.literal("Search"));
+		searchBox.setValue(this.search);
+		searchBox.setResponder(text ->
+		{
+			if (text.equals(this.search) == false)
+			{
+				this.search = text;
+				lastSearch = text;
+				this.scroll = 0;
+				this.rebuildRows();
+			}
+		});
+		this.addRenderableWidget(searchBox);
+
 		this.listTop = TAB_Y + TAB_HEIGHT + 6;
 		this.listBottom = this.height - MARGIN;
+		this.buildRows();
+	}
+
+	/** The current tab's options, or every tab's options matching the search text. */
+	private List<ConfigOption<?>> getVisibleOptions()
+	{
+		if (this.search.isBlank())
+		{
+			return this.tab.options;
+		}
+
+		String needle = this.search.trim().toLowerCase(Locale.ROOT);
+		List<ConfigOption<?>> matches = new ArrayList<>();
+
+		for (Tab candidate : Tab.values())
+		{
+			for (ConfigOption<?> option : candidate.options)
+			{
+				if (option.getName().toLowerCase(Locale.ROOT).contains(needle))
+				{
+					matches.add(option);
+				}
+			}
+		}
+
+		return matches;
+	}
+
+	/** Replaces the option rows without touching the tabs or the search box, so typing keeps its focus. */
+	private void rebuildRows()
+	{
+		this.stopCapture();
+		this.commitEditors();
+
+		for (Row row : this.rows)
+		{
+			this.removeWidget(row.editor());
+			this.removeWidget(row.reset());
+		}
+
 		this.buildRows();
 	}
 
 	private void switchTab(Tab tab)
 	{
 		this.stopCapture();
+		this.clearFocus();
+		this.commitEditors();
 		this.tab = tab;
 		lastTab = tab;
 		this.scroll = 0;
@@ -129,18 +195,21 @@ public class ConfigScreen extends Screen
 	{
 		this.rows.clear();
 
+		List<ConfigOption<?>> options = this.getVisibleOptions();
 		int labelWidth = 0;
+		boolean hasHotkey = false;
 
-		for (ConfigOption<?> option : this.tab.options)
+		for (ConfigOption<?> option : options)
 		{
 			labelWidth = Math.max(labelWidth, this.font.width(option.getName()));
+			hasHotkey |= option instanceof ConfigOption.Hotkey;
 		}
 
 		int editorX = MARGIN + labelWidth + 10;
-		int editorWidth = this.tab == Tab.HOTKEYS ? 160 : 120;
+		int editorWidth = hasHotkey ? 160 : 120;
 		int y = this.listTop;
 
-		for (ConfigOption<?> option : this.tab.options)
+		for (ConfigOption<?> option : options)
 		{
 			AbstractWidget editor = this.createEditor(option, editorX, y, editorWidth);
 			TextButton reset = new TextButton(editorX + editorWidth + 4, y, RESET_WIDTH, WIDGET_HEIGHT, "Reset", () ->
@@ -196,28 +265,66 @@ public class ConfigScreen extends Screen
 		EditBox box = new EditBox(this.font, x, y, width, WIDGET_HEIGHT, Component.literal(option.getName()));
 		box.setMaxLength(256);
 
-		if (option instanceof ConfigOption.Int intOption)
+		box.setValue(valueText(option));
+
+		// Numbers apply on commit, so a half-typed value is not clamped mid-edit.
+		if (option instanceof ConfigOption.Color color)
 		{
-			box.setValue(String.valueOf(intOption.get()));
-			box.setResponder(text -> parseInt(text).ifPresent(intOption::setValue));
-		}
-		else if (option instanceof ConfigOption.Dbl dbl)
-		{
-			box.setValue(String.valueOf(dbl.get()));
-			box.setResponder(text -> parseDouble(text).ifPresent(dbl::setValue));
-		}
-		else if (option instanceof ConfigOption.Color color)
-		{
-			box.setValue(color.getAsString());
-			box.setResponder(text -> color.setValue(ConfigOption.Color.parse(text)));
+			box.setResponder(text ->
+			{
+				if (COLOR_PATTERN.matcher(text.trim()).matches())
+				{
+					color.setValue(ConfigOption.Color.parse(text.trim()));
+				}
+			});
 		}
 		else if (option instanceof ConfigOption.Str str)
 		{
-			box.setValue(str.get());
 			box.setResponder(str::setValue);
 		}
 
 		return box;
+	}
+
+	/** What a text editor shows for the option's stored value. */
+	private static String valueText(ConfigOption<?> option)
+	{
+		if (option instanceof ConfigOption.Color color)
+		{
+			return color.getAsString();
+		}
+
+		return String.valueOf(option.getValue());
+	}
+
+	/** Applies every unfocused number editor, then rewrites it to the stored (clamped, parsed) value. */
+	private void commitEditors()
+	{
+		for (Row row : this.rows)
+		{
+			if (row.editor() instanceof EditBox box && box.isFocused() == false)
+			{
+				applyNumber(row.option(), box.getValue());
+				String text = valueText(row.option());
+
+				if (box.getValue().equals(text) == false)
+				{
+					box.setValue(text);
+				}
+			}
+		}
+	}
+
+	private static void applyNumber(ConfigOption<?> option, String text)
+	{
+		if (option instanceof ConfigOption.Int intOption)
+		{
+			parseInt(text).ifPresent(intOption::setValue);
+		}
+		else if (option instanceof ConfigOption.Dbl dbl)
+		{
+			parseDouble(text).ifPresent(dbl::setValue);
+		}
 	}
 
 	private static OptionalInt parseInt(String text)
@@ -325,6 +432,40 @@ public class ConfigScreen extends Screen
 	}
 
 	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
+	{
+		HotkeyWidget capturing = this.getCapturing();
+
+		if (capturing != null)
+		{
+			return capturing.mouseClicked(event, doubleClick);
+		}
+
+		boolean handled = super.mouseClicked(event, doubleClick);
+
+		if (handled == false)
+		{
+			this.clearFocus();
+		}
+
+		this.commitEditors();
+		return handled;
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event)
+	{
+		HotkeyWidget capturing = this.getCapturing();
+
+		if (capturing != null)
+		{
+			return capturing.mouseReleased(event);
+		}
+
+		return super.mouseReleased(event);
+	}
+
+	@Override
 	public boolean keyPressed(KeyEvent event)
 	{
 		HotkeyWidget capturing = this.getCapturing();
@@ -332,6 +473,15 @@ public class ConfigScreen extends Screen
 		if (capturing != null)
 		{
 			return capturing.keyPressed(event);
+		}
+
+		boolean enter = event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER;
+
+		if (enter && this.getFocused() instanceof EditBox)
+		{
+			this.clearFocus();
+			this.commitEditors();
+			return true;
 		}
 
 		return super.keyPressed(event);
@@ -383,6 +533,8 @@ public class ConfigScreen extends Screen
 	public void removed()
 	{
 		this.stopCapture();
+		this.clearFocus();
+		this.commitEditors();
 		ConfigStorage.save();
 	}
 }

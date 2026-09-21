@@ -11,14 +11,16 @@ import me.apika.stencil.input.Keybind;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 /**
- * Shows the key combination of a hotkey. Click it, press the keys you want
- * (they are collected in order as they go down), and releasing any key ends
- * the capture. Escape while capturing clears the binding, clicking the button
- * again cancels and keeps the old one. A binding shared with another hotkey
- * is shown in red, since only one of them would ever fire.
+ * Shows the key combination of a hotkey. Click it, then press the keys or
+ * mouse buttons you want (they are collected in order as they go down), and
+ * releasing any of them ends the capture. While capturing, Escape cancels and
+ * keeps the old binding, Backspace or Delete clears it to NONE. A binding
+ * shared with another hotkey is shown in red, since only one of them would
+ * ever fire.
  */
 public class HotkeyWidget extends StencilWidget
 {
@@ -54,7 +56,7 @@ public class HotkeyWidget extends StencilWidget
 
 		if (keys.isEmpty())
 		{
-			keys = "NONE";
+			keys = this.capturing ? "..." : "NONE";
 		}
 
 		return this.capturing ? "> " + keys + " <" : keys;
@@ -71,18 +73,36 @@ public class HotkeyWidget extends StencilWidget
 		return Hotkeys.findConflict(this.option) != null ? COLOR_CONFLICT : super.getLabelColor();
 	}
 
+	/** While capturing, every button anywhere on the screen is part of the combination. */
 	@Override
-	public void onClick(MouseButtonEvent event, boolean doubleClick)
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
 	{
 		if (this.capturing)
 		{
-			this.capturing = false;
+			this.add(Keybind.fromVanillaName(InputConstants.Type.MOUSE.getOrCreate(event.button()).getName()));
+			return true;
 		}
-		else
+
+		return super.mouseClicked(event, doubleClick);
+	}
+
+	@Override
+	public boolean mouseReleased(MouseButtonEvent event)
+	{
+		if (this.capturing)
 		{
-			this.captured.clear();
-			this.capturing = true;
+			this.finishIfCaptured();
+			return true;
 		}
+
+		return super.mouseReleased(event);
+	}
+
+	@Override
+	public void onClick(MouseButtonEvent event, boolean doubleClick)
+	{
+		this.captured.clear();
+		this.capturing = true;
 	}
 
 	@Override
@@ -93,22 +113,23 @@ public class HotkeyWidget extends StencilWidget
 			return false;
 		}
 
-		InputConstants.Key key = InputConstants.getKey(event);
+		int key = event.key();
 
-		if (key.getValue() == InputConstants.KEY_ESCAPE)
+		if (key == InputConstants.KEY_ESCAPE)
 		{
-			this.captured.clear();
-			this.stopCapture();
+			this.cancel();
 			return true;
 		}
 
-		String name = Keybind.fromVanillaName(key.getName());
-
-		if (this.captured.contains(name) == false)
+		if (this.captured.isEmpty() && (key == InputConstants.KEY_BACKSPACE || key == InputConstants.KEY_DELETE))
 		{
-			this.captured.add(name);
+			this.capturing = false;
+			this.option.setValue("");
+			this.updateConflict();
+			return true;
 		}
 
+		this.add(Keybind.fromVanillaName(InputConstants.getKey(event).getName()));
 		return true;
 	}
 
@@ -120,20 +141,44 @@ public class HotkeyWidget extends StencilWidget
 			return false;
 		}
 
+		this.finishIfCaptured();
+		return true;
+	}
+
+	private void add(String name)
+	{
+		if (this.captured.contains(name) == false)
+		{
+			this.captured.add(name);
+		}
+	}
+
+	private void finishIfCaptured()
+	{
 		if (this.captured.isEmpty() == false)
 		{
 			this.stopCapture();
 		}
-
-		return true;
 	}
 
-	/** Ends the capture, keeping whatever was pressed. Also used when the screen closes. */
+	private void cancel()
+	{
+		this.captured.clear();
+		this.capturing = false;
+	}
+
+	/** Ends the capture: keeps what was pressed, or the old binding if nothing was. Also used when the screen closes. */
 	public void stopCapture()
 	{
-		if (this.capturing)
+		if (this.capturing == false)
 		{
-			this.capturing = false;
+			return;
+		}
+
+		this.capturing = false;
+
+		if (this.captured.isEmpty() == false)
+		{
 			this.option.setValue(String.join(",", this.captured));
 			this.updateConflict();
 		}

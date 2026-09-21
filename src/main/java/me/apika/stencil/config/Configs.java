@@ -99,6 +99,8 @@ public class Configs
 		public static final Bool SIGN_TEXT_PASTE = new Bool(GENERIC, "signTextPaste", true);
 		public static final Int SPAWN_PROOF_LAYER_RADIUS = new Int(GENERIC, "spawnProofLayerRadius", 4, 1, 32);
 		public static final Int SPAWN_PROOF_RADIUS = new Int(GENERIC, "spawnProofRadius", 4, 1, 16);
+		public static final Bool SPAWN_PROOF_LOW_GAPS = new Bool(GENERIC, "spawnProofLowGaps", true);
+		public static final Bool SPAWN_PROOF_SINGLE_LAYER = new Bool(GENERIC, "spawnProofSingleLayer", true);
 		public static final Str TOOL_ITEM = new Str(GENERIC, "toolItem", "minecraft:stick");
 		public static final Bool TOOL_ITEM_ENABLED = new Bool(GENERIC, "toolItemEnabled", true);
 		public static final Str TOOL_ITEM_COMPONENTS = new Str(GENERIC, "toolItemComponents", "empty");
@@ -171,6 +173,8 @@ public class Configs
 				PICK_BLOCKABLE_SLOTS,
 				SPAWN_PROOF_LAYER_RADIUS,
 				SPAWN_PROOF_RADIUS,
+				SPAWN_PROOF_LOW_GAPS,
+				SPAWN_PROOF_SINGLE_LAYER,
 				TOOL_ITEM,
 				TOOL_ITEM_COMPONENTS
 		);
@@ -356,12 +360,18 @@ public class Configs
 			Generic.CUSTOM_SCHEMATIC_BASE_DIRECTORY,
 			Generic.SPAWN_PROOF_LAYER_RADIUS,
 			Generic.SPAWN_PROOF_RADIUS,
+			Generic.SPAWN_PROOF_LOW_GAPS,
+			Generic.SPAWN_PROOF_SINGLE_LAYER,
 			Colors.SPAWN_PROOF_GHOST_COLOR,
 			Hotkeys.OPEN_GUI_SETTINGS,
 			Hotkeys.SPAWN_PROOF_TOGGLE,
 			Hotkeys.SPAWN_PROOF_MODE,
 			Hotkeys.SPAWN_PROOF_SHAPE,
-			Hotkeys.SPAWN_PROOF_ADJUST_SIDE,
+			Hotkeys.TOOL_SELECT,
+			Hotkeys.TOOL_PLACE_BLOCKS,
+			Hotkeys.TOOL_PLACE_ALL,
+			Hotkeys.TOOL_CHANGE_BLOCK,
+			Hotkeys.TOOL_EXTEND_SIDE,
 			Hotkeys.SPAWN_PROOF_RADIUS_INCREASE,
 			Hotkeys.SPAWN_PROOF_RADIUS_DECREASE
 	);

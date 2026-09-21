@@ -21,6 +21,10 @@ loom {
 			vmArg "-Xmx3G"
 			vmArg "-Xms512M"
 		}
+		client {
+			// GNOME Wayland gives no title bar (libdecor-gtk fails to init); XWayland does.
+			environmentVariable "SDL_VIDEODRIVER", "x11"
+		}
 	}
 }
 
