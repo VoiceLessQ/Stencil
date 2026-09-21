@@ -1,5 +1,6 @@
 package me.apika.stencil;
 
+import me.apika.stencil.config.ConfigStorage;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ public class StencilClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		ConfigStorage.load();
 		LOGGER.info("Stencil initialised");
 	}
 }
