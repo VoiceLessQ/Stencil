@@ -7,6 +7,8 @@ research builds.
 
 ## [Unreleased]
 
+## [0.2.0-alpha] - 2026-09-21
+
 ### Added
 
 - Search box on the settings screen that filters every tab's options by name.
@@ -38,7 +40,7 @@ research builds.
 - Hotkey capture: Escape cancels and keeps the old binding, Backspace or Delete
   clears it.
 - `spawnProofGhostColor` is now `#RRGGBB`; opacity moved to `ghostBlockAlpha`.
-
+- Licensed under GPL-3.0; the mod metadata said MIT before.
 
 ### Fixed
 
@@ -71,5 +73,6 @@ research builds.
   Radius is adjustable per mode by hotkey or scroll wheel, and single sides can be
   extended up to the radius limit.
 
-[Unreleased]: https://github.com/VoiceLessQ/Stencil/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/VoiceLessQ/Stencil/compare/v0.2.0-alpha...HEAD
+[0.2.0-alpha]: https://github.com/VoiceLessQ/Stencil/compare/v0.1.0-alpha...v0.2.0-alpha
 [0.1.0-alpha]: https://github.com/VoiceLessQ/Stencil/releases/tag/v0.1.0-alpha
