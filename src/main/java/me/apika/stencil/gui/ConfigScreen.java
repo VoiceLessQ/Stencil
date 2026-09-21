@@ -28,15 +28,13 @@ import net.minecraft.network.chat.Component;
  * The settings screen: a row of category tabs, then one row per option with
  * its name on the left, an editor in the middle and a reset button on the
  * right. Values apply as they are changed and the file is written on close.
- * Options for features that do not exist yet are greyed out. The search box
- * filters every tab's options by name.
+ * The search box filters every tab's options by name.
  */
 public class ConfigScreen extends Screen
 {
 	private static final int COLOR_BACKGROUND = 0xE0101010;
 	private static final int COLOR_TITLE = 0xFFFFFFFF;
 	private static final int COLOR_LABEL = 0xFFE0E0E0;
-	private static final int COLOR_LABEL_UNIMPLEMENTED = 0xFF707070;
 	private static final int COLOR_LABEL_MODIFIED = 0xFFFFFF80;
 	private static final int COLOR_TAB_SELECTED = 0xFFFFAA00;
 	private static final int COLOR_SWATCH_BORDER = 0xFFFFFFFF;
@@ -49,7 +47,7 @@ public class ConfigScreen extends Screen
 	private static final int RESET_WIDTH = 44;
 	private static final int SWATCH_WIDTH = 16;
 	private static final int SEARCH_WIDTH = 120;
-	private static final Pattern COLOR_PATTERN = Pattern.compile("#?[0-9a-fA-F]{6}([0-9a-fA-F]{2})?");
+	private static final Pattern COLOR_PATTERN = Pattern.compile("#?[0-9a-fA-F]{6}");
 
 	private static final Keybind OPEN_KEY = new Keybind(Hotkeys.OPEN_GUI_SETTINGS);
 	private static Tab lastTab = Tab.GENERIC;
@@ -59,7 +57,6 @@ public class ConfigScreen extends Screen
 	{
 		GENERIC("Generic", Configs.Generic.OPTIONS),
 		VISUALS("Visuals", Configs.Visuals.OPTIONS),
-		INFO_OVERLAYS("Info Overlays", Configs.InfoOverlays.OPTIONS),
 		COLORS("Colors", Configs.Colors.OPTIONS),
 		HOTKEYS("Hotkeys", Hotkeys.HOTKEY_LIST);
 
@@ -218,20 +215,11 @@ public class ConfigScreen extends Screen
 				this.rebuildWidgets();
 			});
 
-			if (Configs.isImplemented(option) == false)
-			{
-				editor.active = false;
-				reset.active = false;
-				editor.setTooltip(Tooltip.create(Component.literal("Not implemented yet")));
-			}
-			else
-			{
-				String commentKey = option.getCommentKey();
+			String commentKey = option.getCommentKey();
 
-				if (Language.getInstance().has(commentKey))
-				{
-					editor.setTooltip(Tooltip.create(Component.translatable(commentKey)));
-				}
+			if (Language.getInstance().has(commentKey))
+			{
+				editor.setTooltip(Tooltip.create(Component.translatable(commentKey)));
 			}
 
 			this.addWidget(editor);
@@ -267,18 +255,8 @@ public class ConfigScreen extends Screen
 
 		box.setValue(valueText(option));
 
-		// Numbers apply on commit, so a half-typed value is not clamped mid-edit.
-		if (option instanceof ConfigOption.Color color)
-		{
-			box.setResponder(text ->
-			{
-				if (COLOR_PATTERN.matcher(text.trim()).matches())
-				{
-					color.setValue(ConfigOption.Color.parse(text.trim()));
-				}
-			});
-		}
-		else if (option instanceof ConfigOption.Str str)
+		// Numbers and colours apply on commit, so a half-typed value is not clamped or rejected mid-edit.
+		if (option instanceof ConfigOption.Str str)
 		{
 			box.setResponder(str::setValue);
 		}
@@ -297,14 +275,14 @@ public class ConfigScreen extends Screen
 		return String.valueOf(option.getValue());
 	}
 
-	/** Applies every unfocused number editor, then rewrites it to the stored (clamped, parsed) value. */
+	/** Applies every unfocused number or colour editor, then rewrites it to the stored (clamped, parsed) value. */
 	private void commitEditors()
 	{
 		for (Row row : this.rows)
 		{
 			if (row.editor() instanceof EditBox box && box.isFocused() == false)
 			{
-				applyNumber(row.option(), box.getValue());
+				applyText(row.option(), box.getValue());
 				String text = valueText(row.option());
 
 				if (box.getValue().equals(text) == false)
@@ -315,7 +293,7 @@ public class ConfigScreen extends Screen
 		}
 	}
 
-	private static void applyNumber(ConfigOption<?> option, String text)
+	private static void applyText(ConfigOption<?> option, String text)
 	{
 		if (option instanceof ConfigOption.Int intOption)
 		{
@@ -324,6 +302,10 @@ public class ConfigScreen extends Screen
 		else if (option instanceof ConfigOption.Dbl dbl)
 		{
 			parseDouble(text).ifPresent(dbl::setValue);
+		}
+		else if (option instanceof ConfigOption.Color color && COLOR_PATTERN.matcher(text.trim()).matches())
+		{
+			color.setValue(ConfigOption.Color.parse(text.trim()));
 		}
 	}
 
@@ -368,7 +350,7 @@ public class ConfigScreen extends Screen
 			row.reset().setY(y);
 			row.editor().visible = visible;
 			row.reset().visible = visible;
-			row.reset().active = visible && row.option().isModified() && Configs.isImplemented(row.option());
+			row.reset().active = visible && row.option().isModified();
 		}
 	}
 
@@ -396,8 +378,7 @@ public class ConfigScreen extends Screen
 			}
 
 			int y = row.editor().getY();
-			int color = Configs.isImplemented(row.option()) == false ? COLOR_LABEL_UNIMPLEMENTED
-					: row.option().isModified() ? COLOR_LABEL_MODIFIED : COLOR_LABEL;
+			int color = row.option().isModified() ? COLOR_LABEL_MODIFIED : COLOR_LABEL;
 			graphics.text(this.font, row.option().getName(), MARGIN, y + (WIDGET_HEIGHT - this.font.lineHeight) / 2 + 1, color);
 
 			row.editor().extractRenderState(graphics, mouseX, mouseY, partialTick);

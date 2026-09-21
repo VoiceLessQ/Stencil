@@ -298,23 +298,24 @@ public abstract class ConfigOption<T>
 			return format(this.value);
 		}
 
+		/** Reads #RRGGBB; a leading alpha byte from an older config is dropped. */
 		public static int parse(String str)
 		{
 			String hex = str.startsWith("#") ? str.substring(1) : str;
 
 			try
 			{
-				return (int) Long.parseLong(hex, 16);
+				return (int) Long.parseLong(hex, 16) & 0xFFFFFF;
 			}
 			catch (NumberFormatException e)
 			{
-				return 0;
+				return 0xFFFFFF;
 			}
 		}
 
 		public static String format(int color)
 		{
-			return String.format("#%08X", color);
+			return String.format("#%06X", color & 0xFFFFFF);
 		}
 
 		@Override

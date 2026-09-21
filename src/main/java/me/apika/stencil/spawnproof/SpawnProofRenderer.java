@@ -21,8 +21,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Draws every ghost as the real block model, translucent with the alpha of
- * the ghost colour, so the player sees which block goes where.
+ * Draws every ghost as the real block model, tinted with the ghost colour at
+ * the configured opacity, so the player sees which block goes where.
  */
 public final class SpawnProofRenderer
 {
@@ -69,9 +69,9 @@ public final class SpawnProofRenderer
 			return;
 		}
 
-		int alpha = Configs.Colors.SPAWN_PROOF_GHOST_COLOR.get() >>> 24;
+		int alpha = (int) Math.round(Configs.Visuals.GHOST_BLOCK_ALPHA.getValue() * 255);
 		QuadInstance tint = new QuadInstance();
-		tint.setColor(alpha << 24 | 0xFFFFFF);
+		tint.setColor(alpha << 24 | Configs.Colors.SPAWN_PROOF_GHOST_COLOR.get());
 		Vec3 camera = context.levelState().cameraRenderState.pos;
 		PoseStack poseStack = context.poseStack();
 		SubmitNodeCollector collector = context.submitNodeCollector();

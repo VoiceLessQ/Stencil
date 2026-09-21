@@ -24,13 +24,27 @@ research builds.
 - Change block refuses blocks that mobs can still spawn on, judged by the
   game's own spawn rule, so full blocks and top slabs are rejected with a
   message.
+- `ghostBlockAlpha` option (Visuals tab) sets how see-through ghosts are.
+- Choosing a light-giving block (torch, lantern, glowstone) makes the spawn proof
+  ghosts a plan for the fewest lights that leave no dark spawnable spot: a lattice on
+  open ground and extra lights where terrain blocks the glow. `lightPlanRadius` (32)
+  sets how far the plan reaches and `torchMaxSpawnLight` the light level mobs still
+  spawn at.
+- `commandReach` option: with cheats or op, raises the block interaction range by
+  `/attribute` while the overlay is on so far ghosts can be placed, and resets it after.
 
 ### Changed
 
 - Hotkey capture: Escape cancels and keeps the old binding, Backspace or Delete
   clears it.
+- `spawnProofGhostColor` is now `#RRGGBB`; opacity moved to `ghostBlockAlpha`.
+
 
 ### Fixed
+
+- Ghost colour changed nothing: only its alpha byte was applied and the tint
+  was always white. Ghosts now take the chosen colour, and a six-digit value no
+  longer turns them invisible.
 
 - Button, lever and grindstone ghosts previewed as the wall variant and hung in
   the air; previews now use the floor placement.
@@ -39,6 +53,8 @@ research builds.
 - Number, colour and text boxes now commit on Enter or when clicking elsewhere,
   and show the clamped value.
 - Dev client on GNOME Wayland had no title bar; the run config now uses X11.
+- Scanning stalled the frame with a light block chosen; the scan and light
+  plan now run on a background thread and the ghosts update when it finishes.
 
 ## [0.1.0-alpha] - 2026-09-21
 

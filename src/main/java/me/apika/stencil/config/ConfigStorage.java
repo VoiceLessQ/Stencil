@@ -31,7 +31,6 @@ public class ConfigStorage
 			new Category("Colors", Configs.Colors.OPTIONS),
 			new Category("Generic", Configs.Generic.OPTIONS),
 			new Category("Hotkeys", Hotkeys.HOTKEY_LIST),
-			new Category("InfoOverlays", Configs.InfoOverlays.OPTIONS),
 			new Category("Visuals", Configs.Visuals.OPTIONS)
 	);
 

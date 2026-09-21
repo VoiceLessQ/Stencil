@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import me.apika.stencil.StencilClient;
 import me.apika.stencil.config.ConfigOption;
@@ -22,6 +24,8 @@ import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
+import net.minecraft.util.Util;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Inventory;
@@ -45,14 +49,17 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * Keeps the set of ghost blocks for spawn proofing: one per mob-spawnable spot
- * within the configured radius around the player, drawn as a translucent box
- * the shape of the ghost block. The scan reruns when the player moves a block,
- * the radius changes, or once a second so light changes are picked up.
+ * within the configured radius around the player, or when the chosen block
+ * gives off light one per planned light source, drawn as the ghost block. The
+ * scan reruns when the player moves a block, the radius changes, or once a
+ * second so light changes are picked up.
  */
 public class SpawnProofManager
 {
 	private static final SpawnProofManager INSTANCE = new SpawnProofManager();
 	private static final int RESCAN_INTERVAL_TICKS = 20;
+	private static final int LIGHT_PLAN_VERTICAL_RADIUS = 16;
+	private static final String REACH_ATTRIBUTE = "minecraft:block_interaction_range";
 
 	private final Keybind toggle = new Keybind(Hotkeys.SPAWN_PROOF_TOGGLE);
 	private final Keybind modeCycle = new Keybind(Hotkeys.SPAWN_PROOF_MODE);
@@ -68,11 +75,15 @@ public class SpawnProofManager
 	private BlockState blockState;
 	private ToolAction action = ToolAction.PLACE;
 	private final Map<SpawnProofMode, SpawnProofArea> areas = new EnumMap<>(SpawnProofMode.class);
+	private final SpawnProofArea lightArea = new SpawnProofArea(Configs.Generic.LIGHT_PLAN_RADIUS);
 	private SpawnProofMode mode = SpawnProofMode.SPAWN_PROOF;
 	private boolean enabled;
 	private boolean dirty;
 	private BlockPos lastCenter;
 	private int ticksSinceScan;
+	private CompletableFuture<Set<BlockPos>> pendingScan;
+	private int appliedReach;
+	private boolean reachWarned;
 
 	private SpawnProofManager()
 	{
@@ -113,14 +124,33 @@ public class SpawnProofManager
 		return this.blockState;
 	}
 
+	/** True when the chosen block lights spots above the spawn level, so ghosts are planned sources instead of fills. */
+	private boolean isLightBlock()
+	{
+		return this.blockState != null && this.blockState.getLightEmission() > Configs.Generic.TORCH_MAX_SPAWN_LIGHT.get();
+	}
+
 	public SpawnProofMode getMode()
 	{
 		return this.mode;
 	}
 
+	/** Light planning has its own, much wider area, since one source covers a lot of ground. */
 	public SpawnProofArea getArea()
 	{
-		return this.areas.get(this.mode);
+		return this.isLightPlanning() ? this.lightArea : this.areas.get(this.mode);
+	}
+
+	/** The radius option behind the current area. */
+	private ConfigOption.Int getRadius()
+	{
+		return this.isLightPlanning() ? Configs.Generic.LIGHT_PLAN_RADIUS : this.mode.getRadius();
+	}
+
+	/** True when spawn proof mode is planning light sources rather than fills. */
+	private boolean isLightPlanning()
+	{
+		return this.mode == SpawnProofMode.SPAWN_PROOF && this.isLightBlock();
 	}
 
 	/** Forget everything, for a world change. */
@@ -129,7 +159,10 @@ public class SpawnProofManager
 		this.generated.clear();
 		this.excluded.clear();
 		this.placed.clear();
+		this.pendingScan = null;
 		this.lastCenter = null;
+		this.appliedReach = 0;
+		this.reachWarned = false;
 	}
 
 	/**
@@ -200,6 +233,8 @@ public class SpawnProofManager
 			this.handleHotkeys(mc);
 		}
 
+		this.syncReach(mc);
+
 		if (this.enabled == false)
 		{
 			return;
@@ -208,12 +243,14 @@ public class SpawnProofManager
 		BlockPos center = mc.player.blockPosition();
 		++this.ticksSinceScan;
 		this.syncRadius();
+		this.finishScan();
 
-		if (this.dirty ||
+		if (this.pendingScan == null &&
+			(this.dirty ||
 			center.equals(this.lastCenter) == false ||
-			this.ticksSinceScan >= RESCAN_INTERVAL_TICKS)
+			this.ticksSinceScan >= RESCAN_INTERVAL_TICKS))
 		{
-			this.rescan(mc.level, center);
+			this.startScan(mc.level, center);
 		}
 
 		this.emitGizmos(mc);
@@ -233,6 +270,7 @@ public class SpawnProofManager
 		{
 			this.enabled = !this.enabled;
 			this.generated.clear();
+			this.pendingScan = null;
 			this.lastCenter = null;
 			mc.player.sendOverlayMessage(Component.literal("Spawn proof " + (this.enabled ? "ON" : "OFF")));
 		}
@@ -256,6 +294,7 @@ public class SpawnProofManager
 		{
 			this.mode = this.mode.next();
 			this.generated.clear();
+			this.pendingScan = null;
 			this.dirty = true;
 			mc.player.sendOverlayMessage(Component.literal("Spawn proof mode: " + this.mode.getDisplayName()));
 		}
@@ -280,7 +319,7 @@ public class SpawnProofManager
 
 		if (delta != 0)
 		{
-			ConfigOption.Int radius = this.mode.getRadius();
+			ConfigOption.Int radius = this.getRadius();
 			radius.setValue(radius.get() + delta);
 			ConfigStorage.save();
 			this.getArea().setAll(radius.get());
@@ -313,12 +352,17 @@ public class SpawnProofManager
 		};
 	}
 
-	/** Aiming at a ghost with a block item in hand makes every ghost that block, if it stops spawns. */
+	/**
+	 * Aiming at a ghost with a block item in hand makes every ghost that block.
+	 * A block that gives off light turns the ghosts into planned light sources;
+	 * anything else must stop spawns. With no ghosts at all, because every spot
+	 * is lit, the click anywhere counts.
+	 */
 	private boolean chooseHeldBlock(Minecraft mc)
 	{
 		BlockPos target = this.findAimedGhost(mc);
 
-		if (target == null)
+		if (target == null && this.generated.isEmpty() == false)
 		{
 			return false;
 		}
@@ -332,13 +376,22 @@ public class SpawnProofManager
 		BlockState state = floorState(item.getBlock());
 		String name = item.getBlock().getName().getString();
 
-		if (state.isValidSpawn(mc.level, target, EntityTypes.ZOMBIE))
+		if (state.getLightEmission() > Configs.Generic.TORCH_MAX_SPAWN_LIGHT.get())
+		{
+			this.blockState = state;
+			this.dirty = true;
+			mc.player.sendOverlayMessage(Component.literal("Light block: " + name + ", ghosts show where to place it"));
+			return true;
+		}
+
+		if (state.isValidSpawn(mc.level, target == null ? mc.player.blockPosition() : target, EntityTypes.ZOMBIE))
 		{
 			mc.player.sendOverlayMessage(Component.literal(name + " does not stop spawns"));
 			return true;
 		}
 
 		this.blockState = state;
+		this.dirty = true;
 		mc.player.sendOverlayMessage(Component.literal("Spawn proof block: " + name));
 		return true;
 	}
@@ -375,7 +428,9 @@ public class SpawnProofManager
 	 */
 	private void withChosenBlockInHand(Minecraft mc, boolean report, Runnable action)
 	{
-		if (this.blockState == null)
+		BlockState chosen = this.blockState;
+
+		if (chosen == null)
 		{
 			if (report)
 			{
@@ -386,7 +441,7 @@ public class SpawnProofManager
 		}
 
 		Inventory inventory = mc.player.getInventory();
-		Item item = this.blockState.getBlock().asItem();
+		Item item = chosen.getBlock().asItem();
 
 		if (inventory.getSelectedItem().getItem() == item)
 		{
@@ -406,7 +461,7 @@ public class SpawnProofManager
 		{
 			if (report)
 			{
-				mc.player.sendOverlayMessage(Component.literal("No " + this.blockState.getBlock().getName().getString() + " in inventory"));
+				mc.player.sendOverlayMessage(Component.literal("No " + chosen.getBlock().getName().getString() + " in inventory"));
 			}
 
 			return;
@@ -465,7 +520,12 @@ public class SpawnProofManager
 		{
 			if (report)
 			{
-				mc.player.sendOverlayMessage(Component.literal("No ghosts in reach"));
+				mc.player.sendOverlayMessage(Component.literal("No ghosts in reach" + this.describeNearest(mc)));
+			}
+
+			if (Configs.Generic.DEBUG_LOGGING.getValue())
+			{
+				StencilClient.LOGGER.info("place all: none of {} ghosts within reach {}", this.generated.size(), reach);
 			}
 
 			return true;
@@ -498,6 +558,37 @@ public class SpawnProofManager
 		});
 
 		return true;
+	}
+
+	/** ", nearest 12 blocks north-east", or nothing when there is no ghost at all. */
+	private String describeNearest(Minecraft mc)
+	{
+		BlockPos here = mc.player.blockPosition();
+		BlockPos nearest = null;
+		int best = Integer.MAX_VALUE;
+
+		for (BlockPos pos : this.generated)
+		{
+			int distance = here.distManhattan(pos);
+
+			if (distance < best)
+			{
+				best = distance;
+				nearest = pos;
+			}
+		}
+
+		if (nearest == null)
+		{
+			return "";
+		}
+
+		int dx = nearest.getX() - here.getX();
+		int dz = nearest.getZ() - here.getZ();
+		String ns = dz < 0 ? "north" : dz > 0 ? "south" : "";
+		String ew = dx > 0 ? "east" : dx < 0 ? "west" : "";
+		String heading = ns.isEmpty() || ew.isEmpty() ? ns + ew : ns + "-" + ew;
+		return ", nearest " + best + " blocks " + heading;
 	}
 
 	/** Creative mode: drop the stack into the selected slot for the action, then put the old stack back. */
@@ -537,7 +628,6 @@ public class SpawnProofManager
 		mc.player.connection.send(new ServerboundSetCarriedItemPacket(slot));
 	}
 
-	/** True when the main hand holds the ghost block's item; otherwise says what is missing. */
 	/**
 	 * Places the block into the ghost's own position, like Litematica's easy
 	 * place: click the top of the block below, or a side neighbour when the
@@ -654,11 +744,54 @@ public class SpawnProofManager
 		return null;
 	}
 
+	/**
+	 * With commandReach set, raises the block interaction range by command while
+	 * the overlay is on, since the server drops placements past that range, and
+	 * resets it when the overlay goes off. Needs cheats or op; says so once.
+	 */
+	private void syncReach(Minecraft mc)
+	{
+		int desired = this.enabled ? Configs.Generic.COMMAND_REACH.get() : 0;
+
+		if (desired == this.appliedReach)
+		{
+			return;
+		}
+
+		if (mc.player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER) == false)
+		{
+			if (this.reachWarned == false && desired > 0)
+			{
+				this.reachWarned = true;
+				mc.player.sendOverlayMessage(Component.literal("commandReach needs cheats or op; placing stays at normal reach"));
+
+				if (Configs.Generic.DEBUG_LOGGING.getValue())
+				{
+					StencilClient.LOGGER.info("reach command skipped, no gamemaster permission");
+				}
+			}
+
+			return;
+		}
+
+		String command = desired == 0
+				? "attribute @s " + REACH_ATTRIBUTE + " base reset"
+				: "attribute @s " + REACH_ATTRIBUTE + " base set " + desired;
+		mc.player.connection.sendCommand(command);
+		this.appliedReach = desired;
+		this.reachWarned = false;
+
+		if (Configs.Generic.DEBUG_LOGGING.getValue())
+		{
+			StencilClient.LOGGER.info("sent /{}", command);
+		}
+	}
+
 	/** Picks up a radius edited in the settings screen, which bypasses the hotkeys. */
 	private void syncRadius()
 	{
 		SpawnProofArea area = this.getArea();
-		int radius = this.mode.getRadius().get();
+		int radius = this.getRadius().get();
 
 		if (area.getBaseRadius() != radius)
 		{
@@ -667,36 +800,104 @@ public class SpawnProofManager
 		}
 	}
 
-	private void rescan(Level world, BlockPos center)
+	/**
+	 * Scans on a background thread so a wide light plan does not stall the
+	 * frame. Chunk reads take no lock in 26.3, and the sets are copied first.
+	 */
+	private void startScan(Level world, BlockPos center)
 	{
+		SpawnProofMode mode = this.mode;
 		SpawnProofArea area = this.getArea();
-		Set<BlockPos> found = this.mode == SpawnProofMode.LAYER
-				? SpawnProofScanner.scanLayer(world, center, area, this.excluded)
-				: SpawnProofScanner.scan(world, center, area, this.mode.getRadius().get(), this.excluded);
-
-		if (Configs.Generic.SPAWN_PROOF_SINGLE_LAYER.getValue())
-		{
-			found.removeIf(pos -> this.isOnOurBlock(world, pos));
-		}
+		BlockState state = this.blockState;
+		boolean lights = this.isLightBlock();
+		int radius = this.getRadius().get();
+		boolean singleLayer = Configs.Generic.SPAWN_PROOF_SINGLE_LAYER.getValue();
+		Set<BlockPos> excluded = Set.copyOf(this.excluded);
+		Set<BlockPos> placed = Set.copyOf(this.placed);
 
 		this.lastCenter = center;
 		this.dirty = false;
 		this.ticksSinceScan = 0;
+		this.pendingScan = CompletableFuture.supplyAsync(() ->
+			scan(world, center, mode, area, state, lights, radius, singleLayer, excluded, placed), Util.backgroundExecutor());
+	}
+
+	/** Swaps a finished scan in, minus anything placed or refused since it started. */
+	private void finishScan()
+	{
+		if (this.pendingScan == null || this.pendingScan.isDone() == false)
+		{
+			return;
+		}
+
+		Set<BlockPos> found;
+
+		try
+		{
+			found = new HashSet<>(this.pendingScan.join());
+		}
+		catch (CompletionException e)
+		{
+			StencilClient.LOGGER.error("Spawn proof scan failed", e.getCause());
+			found = new HashSet<>();
+		}
+
+		this.pendingScan = null;
+		found.removeAll(this.placed);
+		found.removeAll(this.excluded);
 		this.generated.clear();
 		this.generated.addAll(found);
 	}
 
+	private static Set<BlockPos> scan(Level world, BlockPos center, SpawnProofMode mode, SpawnProofArea area, BlockState state, boolean lights, int radius, boolean singleLayer, Set<BlockPos> excluded, Set<BlockPos> placed)
+	{
+		if (mode == SpawnProofMode.LAYER)
+		{
+			return SpawnProofScanner.scanLayer(world, center, area, excluded);
+		}
+
+		if (lights)
+		{
+			return planLights(world, center, area, state, radius, excluded, placed);
+		}
+
+		Set<BlockPos> found = SpawnProofScanner.scan(world, center, area, radius, excluded);
+
+		if (singleLayer)
+		{
+			found.removeIf(pos -> isOnOurBlock(world, pos, state, placed));
+		}
+
+		return found;
+	}
+
+	/** Dark spawnable spots, then the fewest light blocks that cover them. */
+	private static Set<BlockPos> planLights(Level world, BlockPos center, SpawnProofArea area, BlockState state, int radius, Set<BlockPos> excluded, Set<BlockPos> placed)
+	{
+		int vertical = Math.min(radius, LIGHT_PLAN_VERTICAL_RADIUS);
+		int maxLight = Configs.Generic.TORCH_MAX_SPAWN_LIGHT.get();
+		Set<BlockPos> dark = SpawnProofScanner.scan(world, center, area, vertical, maxLight, excluded);
+		Set<BlockPos> planned = new HashSet<>(TorchPlanner.plan(world, center, area, vertical, state, maxLight, dark, placed));
+
+		if (Configs.Generic.DEBUG_LOGGING.getValue())
+		{
+			StencilClient.LOGGER.info("light plan block={} emission={} dark={} planned={}", state.getBlock().getName().getString(), state.getLightEmission(), dark.size(), planned.size());
+		}
+
+		return planned;
+	}
+
 	/** True when the spot sits on a block we placed, or on the chosen block, so nothing stacks. */
-	private boolean isOnOurBlock(Level world, BlockPos pos)
+	private static boolean isOnOurBlock(Level world, BlockPos pos, BlockState state, Set<BlockPos> placed)
 	{
 		BlockPos below = pos.below();
 
-		if (this.placed.contains(below))
+		if (placed.contains(below))
 		{
 			return true;
 		}
 
-		return this.blockState != null && world.getBlockState(below).getBlock() == this.blockState.getBlock();
+		return state != null && world.getBlockState(below).getBlock() == state.getBlock();
 	}
 
 	/**

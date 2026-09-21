@@ -14,8 +14,8 @@ import net.minecraft.world.level.lighting.LayerLightEventListener;
 
 /**
  * Finds the positions a hostile mob could spawn at: a spawnable surface below,
- * a 1x2 column of empty space, and no block light. Pure world queries, no
- * state of its own.
+ * a 1x2 column of empty space, and block light at or below the spawn level
+ * (0 in vanilla). Pure world queries, no state of its own.
  */
 public class SpawnProofScanner
 {
@@ -24,6 +24,12 @@ public class SpawnProofScanner
 	 * spanning the given number of blocks up and down, clamped to the world height.
 	 */
 	public static Set<BlockPos> scan(Level world, BlockPos center, SpawnProofArea area, int verticalRadius, Set<BlockPos> excluded)
+	{
+		return scan(world, center, area, verticalRadius, 0, excluded);
+	}
+
+	/** As above, counting any spot lit at or below the given block light as spawnable. */
+	public static Set<BlockPos> scan(Level world, BlockPos center, SpawnProofArea area, int verticalRadius, int maxLight, Set<BlockPos> excluded)
 	{
 		int minY = Math.max(center.getY() - verticalRadius, world.getMinY());
 		int maxY = Math.min(center.getY() + verticalRadius, world.getMaxY());
@@ -44,7 +50,7 @@ public class SpawnProofScanner
 
 					pos.set(x, y, z);
 
-					if (excluded.contains(pos) == false && isSpawnable(world, blockLight, pos))
+					if (excluded.contains(pos) == false && isSpawnable(world, blockLight, pos, maxLight))
 					{
 						found.add(pos.immutable());
 					}
@@ -92,7 +98,7 @@ public class SpawnProofScanner
 		return found;
 	}
 
-	public static boolean isSpawnable(Level world, LayerLightEventListener blockLight, BlockPos pos)
+	public static boolean isSpawnable(Level world, LayerLightEventListener blockLight, BlockPos pos, int maxLight)
 	{
 		BlockPos below = pos.below();
 		BlockState stateBelow = world.getBlockState(below);
@@ -121,6 +127,6 @@ public class SpawnProofScanner
 			}
 		}
 
-		return blockLight.getLightValue(pos) == 0;
+		return blockLight.getLightValue(pos) <= maxLight;
 	}
 }
