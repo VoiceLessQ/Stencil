@@ -21,6 +21,9 @@ research builds.
   or the chosen block, so fills stay one block thick.
 - `spawnProofLowGaps` option: mark one-block-high spots too, where short mobs
   can still spawn.
+- Change block refuses blocks that mobs can still spawn on, judged by the
+  game's own spawn rule, so full blocks and top slabs are rejected with a
+  message.
 
 ### Changed
 
@@ -29,6 +32,8 @@ research builds.
 
 ### Fixed
 
+- Button, lever and grindstone ghosts previewed as the wall variant and hung in
+  the air; previews now use the floor placement.
 - Dropdown options ignored left click and cycled on right click, because
   Minecraft 26.3 numbers mouse buttons from 1.
 - Number, colour and text boxes now commit on Enter or when clicking elsewhere,

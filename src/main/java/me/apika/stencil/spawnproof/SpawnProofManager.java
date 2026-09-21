@@ -23,6 +23,7 @@ import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -31,8 +32,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -309,25 +313,47 @@ public class SpawnProofManager
 		};
 	}
 
-	/** Aiming at a ghost with a block item in hand makes every ghost that block. */
+	/** Aiming at a ghost with a block item in hand makes every ghost that block, if it stops spawns. */
 	private boolean chooseHeldBlock(Minecraft mc)
 	{
-		if (this.findAimedGhost(mc) == null)
+		BlockPos target = this.findAimedGhost(mc);
+
+		if (target == null)
 		{
 			return false;
 		}
 
-		if (mc.player.getMainHandItem().getItem() instanceof BlockItem item)
-		{
-			this.blockState = item.getBlock().defaultBlockState();
-			mc.player.sendOverlayMessage(Component.literal("Spawn proof block: " + item.getBlock().getName().getString()));
-		}
-		else
+		if (!(mc.player.getMainHandItem().getItem() instanceof BlockItem item))
 		{
 			mc.player.sendOverlayMessage(Component.literal("Hold a block item to choose it"));
+			return true;
 		}
 
+		BlockState state = floorState(item.getBlock());
+		String name = item.getBlock().getName().getString();
+
+		if (state.isValidSpawn(mc.level, target, EntityTypes.ZOMBIE))
+		{
+			mc.player.sendOverlayMessage(Component.literal(name + " does not stop spawns"));
+			return true;
+		}
+
+		this.blockState = state;
+		mc.player.sendOverlayMessage(Component.literal("Spawn proof block: " + name));
 		return true;
+	}
+
+	/** The state a block takes when placed on the floor, so buttons and levers do not preview on a wall. */
+	private static BlockState floorState(Block block)
+	{
+		BlockState state = block.defaultBlockState();
+
+		if (state.hasProperty(BlockStateProperties.ATTACH_FACE))
+		{
+			state = state.setValue(BlockStateProperties.ATTACH_FACE, AttachFace.FLOOR);
+		}
+
+		return state;
 	}
 
 	private boolean placeAimed(Minecraft mc)
