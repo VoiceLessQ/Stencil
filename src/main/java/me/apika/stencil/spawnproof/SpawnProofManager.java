@@ -54,7 +54,7 @@ public class SpawnProofManager
 	{
 		for (SpawnProofMode mode : SpawnProofMode.values())
 		{
-			this.areas.put(mode, new SpawnProofArea(mode.getRadius().get()));
+			this.areas.put(mode, new SpawnProofArea(mode.getRadius()));
 		}
 	}
 

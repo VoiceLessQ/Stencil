@@ -175,4 +175,25 @@ public class Hotkeys
 			TOOL_SELECT_MODIFIER_BLOCK_2,
 			UNLOAD_CURRENT_SCHEMATIC
 	);
+
+	/** Another hotkey bound to exactly the same keys, or null if the keys are free. */
+	public static Hotkey findConflict(Hotkey hotkey)
+	{
+		String keys = hotkey.getKeysAsString();
+
+		if (keys.isEmpty())
+		{
+			return null;
+		}
+
+		for (ConfigOption<?> other : HOTKEY_LIST)
+		{
+			if (other != hotkey && other instanceof Hotkey otherHotkey && keys.equals(otherHotkey.getKeysAsString()))
+			{
+				return otherHotkey;
+			}
+		}
+
+		return null;
+	}
 }

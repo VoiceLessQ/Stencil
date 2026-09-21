@@ -6,7 +6,9 @@ import java.util.List;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import me.apika.stencil.config.ConfigOption;
+import me.apika.stencil.config.Hotkeys;
 import me.apika.stencil.input.Keybind;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -14,11 +16,14 @@ import net.minecraft.network.chat.Component;
 /**
  * Shows the key combination of a hotkey. Click it, press the keys you want
  * (they are collected in order as they go down), and releasing any key ends
- * the capture. Escape while capturing clears the binding.
+ * the capture. Escape while capturing clears the binding, clicking the button
+ * again cancels and keeps the old one. A binding shared with another hotkey
+ * is shown in red, since only one of them would ever fire.
  */
 public class HotkeyWidget extends StencilWidget
 {
 	private static final int COLOR_CAPTURING = 0xFFFFAA00;
+	private static final int COLOR_CONFLICT = 0xFFFF5555;
 
 	private final ConfigOption.Hotkey option;
 	private final List<String> captured = new ArrayList<>();
@@ -28,6 +33,13 @@ public class HotkeyWidget extends StencilWidget
 	{
 		super(x, y, width, height, Component.literal(option.getName()));
 		this.option = option;
+		this.updateConflict();
+	}
+
+	private void updateConflict()
+	{
+		ConfigOption.Hotkey conflict = Hotkeys.findConflict(this.option);
+		this.setTooltip(conflict != null ? Tooltip.create(Component.literal("Conflicts with " + conflict.getName())) : null);
 	}
 
 	public boolean isCapturing()
@@ -51,7 +63,12 @@ public class HotkeyWidget extends StencilWidget
 	@Override
 	protected int getLabelColor()
 	{
-		return this.capturing ? COLOR_CAPTURING : super.getLabelColor();
+		if (this.capturing)
+		{
+			return COLOR_CAPTURING;
+		}
+
+		return Hotkeys.findConflict(this.option) != null ? COLOR_CONFLICT : super.getLabelColor();
 	}
 
 	@Override
@@ -59,7 +76,7 @@ public class HotkeyWidget extends StencilWidget
 	{
 		if (this.capturing)
 		{
-			this.stopCapture();
+			this.capturing = false;
 		}
 		else
 		{
@@ -118,6 +135,7 @@ public class HotkeyWidget extends StencilWidget
 		{
 			this.capturing = false;
 			this.option.setValue(String.join(",", this.captured));
+			this.updateConflict();
 		}
 	}
 }

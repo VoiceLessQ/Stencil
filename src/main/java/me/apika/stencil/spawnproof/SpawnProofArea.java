@@ -1,5 +1,6 @@
 package me.apika.stencil.spawnproof;
 
+import me.apika.stencil.config.ConfigOption;
 import net.minecraft.core.Direction;
 
 /**
@@ -34,8 +35,7 @@ public class SpawnProofArea
 		}
 	}
 
-	private static final int MAX_EXTENT = 64;
-
+	private final int maxExtent;
 	private int north;
 	private int south;
 	private int east;
@@ -43,9 +43,11 @@ public class SpawnProofArea
 	private int baseRadius;
 	private Shape shape = Shape.SQUARE;
 
-	public SpawnProofArea(int radius)
+	/** The sides can grow no further than the radius option itself allows. */
+	public SpawnProofArea(ConfigOption.Int radius)
 	{
-		this.setAll(radius);
+		this.maxExtent = radius.getMaxValue();
+		this.setAll(radius.get());
 	}
 
 	public Shape getShape()
@@ -72,7 +74,7 @@ public class SpawnProofArea
 
 	public void setExtent(Direction side, int value)
 	{
-		value = Math.clamp(value, 0, MAX_EXTENT);
+		value = Math.clamp(value, 0, this.maxExtent);
 
 		switch (side)
 		{
@@ -93,7 +95,7 @@ public class SpawnProofArea
 	public void setAll(int radius)
 	{
 		this.baseRadius = radius;
-		this.north = this.south = this.east = this.west = Math.clamp(radius, 0, MAX_EXTENT);
+		this.north = this.south = this.east = this.west = Math.clamp(radius, 0, this.maxExtent);
 	}
 
 	public int getMinX(int centerX) { return centerX - this.west; }
