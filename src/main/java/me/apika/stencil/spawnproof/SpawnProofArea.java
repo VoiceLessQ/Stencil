@@ -43,6 +43,15 @@ public class SpawnProofArea
 		this.setAll(radius.get());
 	}
 
+	public SpawnProofArea(int west, int east, int north, int south)
+	{
+		this.maxExtent = Integer.MAX_VALUE;
+		this.west = west;
+		this.east = east;
+		this.north = north;
+		this.south = south;
+	}
+
 	public Shape getShape()
 	{
 		return this.shape;

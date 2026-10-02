@@ -6,10 +6,10 @@ import me.apika.stencil.config.ConfigOption.Hotkey;
 
 public class Hotkeys
 {
-	public static final Hotkey OPEN_GUI_SETTINGS = new Hotkey("openGuiSettings", "M,C");
-	public static final Hotkey SPAWN_PROOF_TOGGLE = new Hotkey("spawnProofToggle", "M,X");
-	public static final Hotkey SPAWN_PROOF_MODE = new Hotkey("spawnProofMode", "M,N");
-	public static final Hotkey SPAWN_PROOF_SHAPE = new Hotkey("spawnProofShape", "M,B");
+	public static final Hotkey OPEN_GUI_SETTINGS = new Hotkey("openGuiSettings", "N,C");
+	public static final Hotkey SPAWN_PROOF_TOGGLE = new Hotkey("spawnProofToggle", "N,X");
+	public static final Hotkey SPAWN_PROOF_MODE = new Hotkey("spawnProofMode", "N,M");
+	public static final Hotkey SPAWN_PROOF_SHAPE = new Hotkey("spawnProofShape", "N,B");
 	public static final Hotkey SPAWN_PROOF_RADIUS_DECREASE = new Hotkey("spawnProofRadiusDecrease", "LEFT_SHIFT,DOWN");
 	public static final Hotkey SPAWN_PROOF_RADIUS_INCREASE = new Hotkey("spawnProofRadiusIncrease", "LEFT_SHIFT,UP");
 	public static final Hotkey TOOL_SELECT = new Hotkey("toolSelect", "LEFT_CONTROL", KeybindSettings.PRESS_ALLOWEXTRA);

@@ -19,9 +19,21 @@ research builds.
   checked and clamped like in the settings screen and saved at once. Unknown
   key names and item ids are refused, and a hotkey that clashes with another
   gets the same warning as in the settings screen.
+- Mark area tool: right click two corner blocks to fix the ghosts to that box
+  instead of the area around the player. Holding the tool shows how many
+  blocks the area needs, how many are carried and how many are short. Extend
+  facing side resizes the box in the looked direction, up and down included.
+  Shift and right click clears it.
+- Replace blocks tool: holding right click on a block breaks it and places the
+  chosen block there. Limited to blocks mobs cannot spawn on or that Stencil
+  placed, never block entities, and to the marked area when one is set.
 
 ### Changed
 
+- Default hotkeys moved from the `M` prefix to `N`, since `M` is Litematica's
+  menu key and `M,C` was its settings key: settings `N,C`, overlay `N,X`, mode
+  `N,M`, shape `N,B`. A saved `config/stencil.json` keeps the old keys until
+  they are reset.
 - Tools only work with the tool item in the main hand: `Left Ctrl` plus wheel
   picks the tool and right click runs it. A right click with the tool item is
   always taken while the overlay is on.

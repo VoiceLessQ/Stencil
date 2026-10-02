@@ -4,8 +4,10 @@ public enum ToolAction
 {
 	PLACE        ("Place blocks"),
 	PLACE_ALL    ("Place all"),
+	REPLACE      ("Replace blocks"),
 	CHANGE_BLOCK ("Change block"),
-	EXTEND_SIDE  ("Extend facing side");
+	EXTEND_SIDE  ("Extend facing side"),
+	MARK_AREA    ("Mark area");
 
 	private final String displayName;
 

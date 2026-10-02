@@ -294,7 +294,7 @@ public class StencilCommand
 
 		if (option instanceof ConfigOption.Hotkey)
 		{
-			return " (key names like LEFT_SHIFT,UP or M,X, or none)";
+			return " (key names like LEFT_SHIFT,UP or N,X, or none)";
 		}
 
 		if (option == Configs.Generic.TOOL_ITEM)

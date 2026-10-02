@@ -18,4 +18,13 @@ public class MinecraftMixin
 			ci.cancel();
 		}
 	}
+
+	@Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
+	private void stencil$continueAttack(boolean down, CallbackInfo ci)
+	{
+		if (SpawnProofManager.getInstance().continueReplace())
+		{
+			ci.cancel();
+		}
+	}
 }

@@ -43,8 +43,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -77,6 +79,13 @@ public class SpawnProofManager
 	private CompletableFuture<Set<BlockPos>> pendingScan;
 	private int appliedReach;
 	private boolean reachWarned;
+	private BlockPos markCorner;
+	private BoundingBox marked;
+	private int reportedNeeded = -1;
+	private int reportedCarried = -1;
+	private BlockPos replaceTarget;
+	private Direction replaceFace;
+	private boolean useArmed = true;
 
 	private SpawnProofManager()
 	{
@@ -145,6 +154,9 @@ public class SpawnProofManager
 		this.lastCenter = null;
 		this.appliedReach = 0;
 		this.reachWarned = false;
+		this.markCorner = null;
+		this.marked = null;
+		this.replaceTarget = null;
 	}
 
 	public boolean onScroll(double yOffset)
@@ -188,6 +200,14 @@ public class SpawnProofManager
 
 	private void extendFacingSide(Minecraft mc, boolean up)
 	{
+		if (this.marked != null)
+		{
+			Direction side = mc.player.getNearestViewDirection();
+			this.setMarked(grow(this.marked, side, up ? 1 : -1));
+			mc.player.sendOverlayMessage(Component.literal("Marked " + side.getName() + ": " + describe(this.marked)));
+			return;
+		}
+
 		Direction side = mc.player.getDirection();
 		SpawnProofArea area = this.getArea();
 		area.setExtent(side, area.getExtent(side) + (up ? 1 : -1));
@@ -208,13 +228,14 @@ public class SpawnProofManager
 		}
 
 		this.syncReach(mc);
+		this.useArmed = mc.options.keyUse.isDown() == false;
 
 		if (this.enabled == false)
 		{
 			return;
 		}
 
-		BlockPos center = mc.player.blockPosition();
+		BlockPos center = this.scanCenter(mc.player.blockPosition());
 		++this.ticksSinceScan;
 		this.syncRadius();
 		this.finishScan();
@@ -227,7 +248,150 @@ public class SpawnProofManager
 			this.startScan(mc.level, center);
 		}
 
+		if (this.marked != null && this.pendingScan == null && this.dirty == false && this.isHoldingTool(mc))
+		{
+			this.reportNeeded(mc);
+		}
+		else if (this.isHoldingTool(mc) == false)
+		{
+			this.reportedNeeded = -1;
+		}
+
 		this.emitGizmos(mc);
+	}
+
+	private BlockPos scanCenter(BlockPos player)
+	{
+		if (this.marked == null)
+		{
+			return player;
+		}
+
+		BlockPos middle = this.marked.getCenter();
+		return this.mode == SpawnProofMode.LAYER ? new BlockPos(middle.getX(), player.getY(), middle.getZ()) : middle;
+	}
+
+	private void setMarked(BoundingBox box)
+	{
+		this.marked = box;
+		this.pendingScan = null;
+		this.dirty = true;
+		this.reportedNeeded = -1;
+	}
+
+	private static BoundingBox grow(BoundingBox box, Direction side, int amount)
+	{
+		int minX = box.minX();
+		int minY = box.minY();
+		int minZ = box.minZ();
+		int maxX = box.maxX();
+		int maxY = box.maxY();
+		int maxZ = box.maxZ();
+
+		switch (side)
+		{
+			case WEST -> minX = Math.min(minX - amount, maxX);
+			case EAST -> maxX = Math.max(maxX + amount, minX);
+			case NORTH -> minZ = Math.min(minZ - amount, maxZ);
+			case SOUTH -> maxZ = Math.max(maxZ + amount, minZ);
+			case DOWN -> minY = Math.min(minY - amount, maxY);
+			case UP -> maxY = Math.max(maxY + amount, minY);
+		}
+
+		return new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+	}
+
+	private static String describe(BoundingBox box)
+	{
+		return box.getXSpan() + "x" + box.getZSpan() + ", " + box.getYSpan() + " high";
+	}
+
+	private void markAreaCorner(Minecraft mc)
+	{
+		if (mc.player.isShiftKeyDown())
+		{
+			this.markCorner = null;
+
+			if (this.marked != null)
+			{
+				this.setMarked(null);
+			}
+
+			mc.player.sendOverlayMessage(Component.literal("Marked area cleared"));
+			return;
+		}
+
+		if (!(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK)
+		{
+			mc.player.sendOverlayMessage(Component.literal("Aim at a block to mark a corner"));
+			return;
+		}
+
+		BlockPos pos = hit.getBlockPos();
+
+		if (this.markCorner == null)
+		{
+			this.markCorner = pos;
+			mc.player.sendOverlayMessage(Component.literal("Corner set, now mark the opposite corner"));
+			return;
+		}
+
+		BoundingBox box = BoundingBox.fromCorners(this.markCorner, pos);
+		this.markCorner = null;
+		this.setMarked(new BoundingBox(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY() + 1, box.maxZ()));
+		mc.player.sendOverlayMessage(Component.literal("Marked area " + describe(this.marked)));
+	}
+
+	private void reportNeeded(Minecraft mc)
+	{
+		int needed = this.generated.size();
+		int carried = this.blockState == null || mc.player.hasInfiniteMaterials() ? -1 : countCarried(mc.player.getInventory(), this.blockState.getBlock().asItem());
+
+		if (needed == this.reportedNeeded && carried == this.reportedCarried)
+		{
+			return;
+		}
+
+		this.reportedNeeded = needed;
+		this.reportedCarried = carried;
+		mc.player.sendOverlayMessage(Component.literal(this.describeNeeded(needed, carried)));
+	}
+
+	private String describeNeeded(int needed, int carried)
+	{
+		if (needed == 0)
+		{
+			return "Marked area: nothing left to place";
+		}
+
+		if (this.blockState == null)
+		{
+			return "Marked area: " + needed + " to place, choose a block with Change block";
+		}
+
+		String text = "Marked area: " + needed + " " + this.blockState.getBlock().getName().getString() + " to place";
+
+		if (carried < 0)
+		{
+			return text;
+		}
+
+		return carried >= needed ? text + ", " + carried + " carried" : text + ", " + carried + " carried, " + (needed - carried) + " short";
+	}
+
+	private static int countCarried(Inventory inventory, Item item)
+	{
+		int count = 0;
+
+		for (ItemStack stack : inventory.getNonEquipmentItems())
+		{
+			if (stack.getItem() == item)
+			{
+				count += stack.getCount();
+			}
+		}
+
+		return count;
 	}
 
 	private void handleHotkeys(Minecraft mc)
@@ -300,15 +464,137 @@ public class SpawnProofManager
 			return false;
 		}
 
+		boolean fresh = this.useArmed;
+		this.useArmed = false;
+
 		switch (this.action)
 		{
 			case PLACE -> this.placeAimed(mc);
 			case PLACE_ALL -> this.placeAll(mc, true);
+			case REPLACE -> this.startReplace(mc, fresh);
 			case CHANGE_BLOCK -> this.chooseHeldBlock(mc);
 			case EXTEND_SIDE -> {}
+			case MARK_AREA ->
+			{
+				if (fresh)
+				{
+					this.markAreaCorner(mc);
+				}
+			}
 		}
 
 		return true;
+	}
+
+	private void startReplace(Minecraft mc, boolean fresh)
+	{
+		if (this.replaceTarget != null)
+		{
+			return;
+		}
+
+		if (this.blockState == null)
+		{
+			if (fresh)
+			{
+				mc.player.sendOverlayMessage(Component.literal("No block chosen: use the Change block tool on a ghost"));
+			}
+
+			return;
+		}
+
+		if (!(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK)
+		{
+			return;
+		}
+
+		BlockPos pos = hit.getBlockPos();
+		String refusal = this.replaceRefusal(mc.level, pos, mc.level.getBlockState(pos));
+
+		if (refusal != null)
+		{
+			if (fresh)
+			{
+				mc.player.sendOverlayMessage(Component.literal(refusal));
+			}
+
+			return;
+		}
+
+		this.replaceTarget = pos;
+		this.replaceFace = hit.getDirection();
+		mc.gameMode.startDestroyBlock(pos, this.replaceFace);
+		mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, true);
+	}
+
+	private String replaceRefusal(Level level, BlockPos pos, BlockState state)
+	{
+		String name = state.getBlock().getName().getString();
+
+		if (this.marked != null && this.marked.isInside(pos) == false)
+		{
+			return "Outside the marked area";
+		}
+
+		if (state.getBlock() == this.blockState.getBlock())
+		{
+			return "Already " + name;
+		}
+
+		if (state.hasBlockEntity() || state.getDestroySpeed(level, pos) < 0.0f)
+		{
+			return name + " cannot be replaced";
+		}
+
+		if (this.placed.contains(pos) == false && state.isValidSpawn(level, pos, EntityTypes.ZOMBIE))
+		{
+			return "Only spawn proofing blocks can be replaced";
+		}
+
+		return null;
+	}
+
+	public boolean continueReplace()
+	{
+		Minecraft mc = Minecraft.getInstance();
+		BlockPos target = this.replaceTarget;
+
+		if (target == null || mc.player == null || mc.level == null)
+		{
+			return false;
+		}
+
+		if (this.enabled == false || this.blockState == null || mc.options.keyUse.isDown() == false || this.isHoldingTool(mc) == false)
+		{
+			this.stopReplace(mc);
+			return false;
+		}
+
+		if (mc.level.getBlockState(target).canBeReplaced())
+		{
+			this.replaceTarget = null;
+			this.withChosenBlockInHand(mc, true, () -> this.placeAt(mc, target));
+			return true;
+		}
+
+		if (!(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK || hit.getBlockPos().equals(target) == false)
+		{
+			this.stopReplace(mc);
+			return false;
+		}
+
+		if (mc.gameMode.continueDestroyBlock(target, this.replaceFace))
+		{
+			mc.player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, true);
+		}
+
+		return true;
+	}
+
+	private void stopReplace(Minecraft mc)
+	{
+		this.replaceTarget = null;
+		mc.gameMode.stopDestroyBlock();
 	}
 
 	private boolean chooseHeldBlock(Minecraft mc)
@@ -730,10 +1016,13 @@ public class SpawnProofManager
 	private void startScan(Level world, BlockPos center)
 	{
 		SpawnProofMode mode = this.mode;
-		SpawnProofArea area = this.getArea();
+		BoundingBox bounds = this.marked;
+		SpawnProofArea area = bounds == null ? this.getArea() : boxArea(bounds, center);
 		BlockState state = this.blockState;
 		boolean lights = this.isLightBlock();
 		int radius = this.getRadius().get();
+		int vertical = bounds != null ? Math.max(center.getY() - bounds.minY(), bounds.maxY() - center.getY())
+				: lights ? Math.min(radius, LIGHT_PLAN_VERTICAL_RADIUS) : radius;
 		boolean singleLayer = Configs.Generic.SPAWN_PROOF_SINGLE_LAYER.getValue();
 		Set<BlockPos> excluded = Set.copyOf(this.excluded);
 		Set<BlockPos> placed = Set.copyOf(this.placed);
@@ -742,7 +1031,24 @@ public class SpawnProofManager
 		this.dirty = false;
 		this.ticksSinceScan = 0;
 		this.pendingScan = CompletableFuture.supplyAsync(() ->
-			scan(world, center, mode, area, state, lights, radius, singleLayer, excluded, placed), Util.backgroundExecutor());
+			scan(world, center, mode, area, bounds, state, lights, vertical, singleLayer, excluded, placed), Util.backgroundExecutor());
+	}
+
+	private static SpawnProofArea boxArea(BoundingBox box, BlockPos center)
+	{
+		return new SpawnProofArea(center.getX() - box.minX(), box.maxX() - center.getX(), center.getZ() - box.minZ(), box.maxZ() - center.getZ());
+	}
+
+	private static Set<BlockPos> inside(Set<BlockPos> found, BoundingBox bounds)
+	{
+		if (bounds == null)
+		{
+			return found;
+		}
+
+		Set<BlockPos> kept = new HashSet<>(found);
+		kept.removeIf(pos -> bounds.isInside(pos) == false);
+		return kept;
 	}
 
 	private void finishScan()
@@ -771,19 +1077,19 @@ public class SpawnProofManager
 		this.generated.addAll(found);
 	}
 
-	private static Set<BlockPos> scan(Level world, BlockPos center, SpawnProofMode mode, SpawnProofArea area, BlockState state, boolean lights, int radius, boolean singleLayer, Set<BlockPos> excluded, Set<BlockPos> placed)
+	private static Set<BlockPos> scan(Level world, BlockPos center, SpawnProofMode mode, SpawnProofArea area, BoundingBox bounds, BlockState state, boolean lights, int vertical, boolean singleLayer, Set<BlockPos> excluded, Set<BlockPos> placed)
 	{
 		if (mode == SpawnProofMode.LAYER)
 		{
-			return SpawnProofScanner.scanLayer(world, center, area, excluded);
+			return inside(SpawnProofScanner.scanLayer(world, center, area, excluded), bounds);
 		}
 
 		if (lights)
 		{
-			return planLights(world, center, area, state, radius, excluded, placed);
+			return planLights(world, center, area, bounds, state, vertical, excluded, placed);
 		}
 
-		Set<BlockPos> found = SpawnProofScanner.scan(world, center, area, radius, excluded);
+		Set<BlockPos> found = inside(SpawnProofScanner.scan(world, center, area, vertical, excluded), bounds);
 
 		if (singleLayer)
 		{
@@ -793,11 +1099,10 @@ public class SpawnProofManager
 		return found;
 	}
 
-	private static Set<BlockPos> planLights(Level world, BlockPos center, SpawnProofArea area, BlockState state, int radius, Set<BlockPos> excluded, Set<BlockPos> placed)
+	private static Set<BlockPos> planLights(Level world, BlockPos center, SpawnProofArea area, BoundingBox bounds, BlockState state, int vertical, Set<BlockPos> excluded, Set<BlockPos> placed)
 	{
-		int vertical = Math.min(radius, LIGHT_PLAN_VERTICAL_RADIUS);
 		int maxLight = Configs.Generic.TORCH_MAX_SPAWN_LIGHT.get();
-		Set<BlockPos> dark = SpawnProofScanner.scan(world, center, area, vertical, maxLight, excluded);
+		Set<BlockPos> dark = inside(SpawnProofScanner.scan(world, center, area, vertical, maxLight, excluded), bounds);
 		Set<BlockPos> planned = new HashSet<>(TorchPlanner.plan(world, center, area, vertical, state, maxLight, dark, placed));
 
 		if (Configs.Generic.DEBUG_LOGGING.getValue())
@@ -822,13 +1127,14 @@ public class SpawnProofManager
 
 	private void emitGizmos(Minecraft mc)
 	{
-		if (this.generated.isEmpty())
+		if (this.generated.isEmpty() && this.marked == null && this.markCorner == null)
 		{
 			return;
 		}
 
 		int stroke = Configs.Colors.SPAWN_PROOF_GHOST_COLOR.get() | 0xFF000000;
 		GizmoStyle style = GizmoStyle.stroke(stroke, 1.0f);
+		GizmoStyle markStyle = GizmoStyle.stroke(stroke, 2.0f);
 		AABB bounds = new AABB(BlockPos.ZERO);
 
 		if (this.blockState != null)
@@ -839,6 +1145,16 @@ public class SpawnProofManager
 
 		try (Gizmos.TemporaryCollection ignored = mc.collectPerTickGizmos())
 		{
+			if (this.marked != null)
+			{
+				Gizmos.cuboid(AABB.of(this.marked), markStyle);
+			}
+
+			if (this.markCorner != null)
+			{
+				Gizmos.cuboid(new AABB(this.markCorner), markStyle);
+			}
+
 			for (BlockPos pos : this.generated)
 			{
 				Gizmos.cuboid(bounds.move(pos), style);
