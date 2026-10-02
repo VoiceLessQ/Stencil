@@ -20,10 +20,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * Draws every ghost as the real block model, tinted with the ghost colour at
- * the configured opacity, so the player sees which block goes where.
- */
 public final class SpawnProofRenderer
 {
 	private static final Direction[] SIDES = { null, Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST };

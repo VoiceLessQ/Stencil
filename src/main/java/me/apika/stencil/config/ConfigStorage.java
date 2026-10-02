@@ -16,11 +16,6 @@ import com.google.gson.JsonParser;
 import me.apika.stencil.StencilClient;
 import net.fabricmc.loader.api.FabricLoader;
 
-/**
- * Reads and writes config/stencil.json. The category names and the per-option
- * keys are Litematica's, so lifting a block out of a litematica.json into this
- * file works.
- */
 public class ConfigStorage
 {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -34,7 +29,6 @@ public class ConfigStorage
 			new Category("Visuals", Configs.Visuals.OPTIONS)
 	);
 
-	/** Every option in every category, for lookup by name. */
 	public static List<ConfigOption<?>> getAllOptions()
 	{
 		return CATEGORIES.stream().flatMap(category -> category.options().stream()).toList();

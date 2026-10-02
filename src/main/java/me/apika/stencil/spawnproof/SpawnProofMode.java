@@ -3,12 +3,9 @@ package me.apika.stencil.spawnproof;
 import me.apika.stencil.config.ConfigOption;
 import me.apika.stencil.config.Configs;
 
-/** Which positions get a ghost block, and which radius setting drives it. */
 public enum SpawnProofMode
 {
-	/** Every mob-spawnable spot in a cube around the player, or the light sources that would cover them. */
 	SPAWN_PROOF ("Spawn proof", Configs.Generic.SPAWN_PROOF_RADIUS),
-	/** Every empty spot on the player's own Y level, for filling a flat layer. */
 	LAYER       ("Layer", Configs.Generic.SPAWN_PROOF_LAYER_RADIUS);
 
 	private final String displayName;

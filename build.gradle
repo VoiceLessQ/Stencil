@@ -22,18 +22,13 @@ loom {
 			vmArg "-Xms512M"
 		}
 		client {
-			// GNOME Wayland gives no title bar (libdecor-gtk fails to init); XWayland does.
 			environmentVariable "SDL_VIDEODRIVER", "x11"
 		}
 	}
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
 	minecraft "net.minecraft:minecraft:${project.minecraft_version}"
-	// No mappings line: with fabric.loom.disableObfuscation=true the jar is
-	// already in named (mojmap) form, so Loom must not try to remap.
-	// Plain implementation (not modImplementation) for the same reason.
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }

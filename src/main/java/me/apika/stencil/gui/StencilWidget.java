@@ -6,11 +6,6 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
-/**
- * A flat button in the style of the classic config screens: black box, grey
- * border that turns white on hover, text centered. Subclasses decide what the
- * text says and what a click does.
- */
 public abstract class StencilWidget extends AbstractWidget
 {
 	protected static final int COLOR_BACKGROUND = 0xFF000000;
@@ -24,7 +19,6 @@ public abstract class StencilWidget extends AbstractWidget
 		super(x, y, width, height, message);
 	}
 
-	/** The text drawn in the box; called every frame so it follows the value. */
 	protected abstract String getLabel();
 
 	protected int getLabelColor()

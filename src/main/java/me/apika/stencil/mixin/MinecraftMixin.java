@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Minecraft.class)
 public class MinecraftMixin
 {
-	/** Runs on the use press and on every held repeat, so a held right click keeps placing. */
 	@Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)
 	private void stencil$startUseItem(CallbackInfo ci)
 	{

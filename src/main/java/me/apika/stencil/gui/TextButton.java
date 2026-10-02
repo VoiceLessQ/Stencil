@@ -3,7 +3,6 @@ package me.apika.stencil.gui;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
-/** A plain button with fixed text that runs something when clicked. */
 public class TextButton extends StencilWidget
 {
 	private final Runnable action;

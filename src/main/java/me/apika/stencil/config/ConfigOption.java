@@ -4,14 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-/**
- * One persisted setting. Subclasses cover the value types the settings screen
- * knows how to draw: boolean, integer, double, string, colour, enum cycle and
- * hotkey.
- *
- * The JSON key of every option matches the corresponding Litematica option, so
- * a hand-copied block of an existing litematica.json loads here unchanged.
- */
 public abstract class ConfigOption<T>
 {
 	private final String name;
@@ -30,13 +22,11 @@ public abstract class ConfigOption<T>
 		return this.name;
 	}
 
-	/** Translation key for the label shown in the settings screen. */
 	public String getNameKey()
 	{
 		return "stencil.config." + this.categoryKey() + ".name." + this.name;
 	}
 
-	/** Translation key for the hover tooltip. */
 	public String getCommentKey()
 	{
 		return "stencil.config." + this.categoryKey() + ".comment." + this.name;
@@ -72,8 +62,6 @@ public abstract class ConfigOption<T>
 	public abstract JsonElement toJson();
 
 	public abstract void fromJson(JsonElement element);
-
-	// ------------------------------------------------------------------
 
 	public static class Bool extends ConfigOption<Boolean>
 	{
@@ -268,10 +256,6 @@ public abstract class ConfigOption<T>
 		}
 	}
 
-	/**
-	 * An ARGB colour. Stored in the file as the "#AARRGGBB" string Litematica
-	 * uses, kept in memory as a packed int for the renderer.
-	 */
 	public static class Color extends ConfigOption<Integer>
 	{
 		private final String category;
@@ -298,7 +282,6 @@ public abstract class ConfigOption<T>
 			return format(this.value);
 		}
 
-		/** Reads #RRGGBB; a leading alpha byte from an older config is dropped. */
 		public static int parse(String str)
 		{
 			String hex = str.startsWith("#") ? str.substring(1) : str;
@@ -334,7 +317,6 @@ public abstract class ConfigOption<T>
 		}
 	}
 
-	/** A cycle through the constants of an enum, stored by its config string. */
 	public static class OptionList<E extends Enum<E> & ConfigOptionValue> extends ConfigOption<E>
 	{
 		private final String category;
@@ -406,11 +388,6 @@ public abstract class ConfigOption<T>
 		}
 	}
 
-	/**
-	 * A key combination, stored as the comma separated GLFW key names
-	 * Litematica uses ("M,A", "LEFT_CONTROL,LEFT_ALT,S"), so existing muscle
-	 * memory and existing config files carry over.
-	 */
 	public static class Hotkey extends ConfigOption<String>
 	{
 		private final KeybindSettings settings;

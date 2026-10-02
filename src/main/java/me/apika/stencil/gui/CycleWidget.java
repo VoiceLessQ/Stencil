@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
-/** Cycles an enum option: left click forward, right click backward. */
 public class CycleWidget extends StencilWidget
 {
 	private final ConfigOption.OptionList<?> option;

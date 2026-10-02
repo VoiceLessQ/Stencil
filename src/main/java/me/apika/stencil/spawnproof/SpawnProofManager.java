@@ -48,13 +48,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-/**
- * Keeps the set of ghost blocks for spawn proofing: one per mob-spawnable spot
- * within the configured radius around the player, or when the chosen block
- * gives off light one per planned light source, drawn as the ghost block. The
- * scan reruns when the player moves a block, the radius changes, or once a
- * second so light changes are picked up.
- */
 public class SpawnProofManager
 {
 	private static final SpawnProofManager INSTANCE = new SpawnProofManager();
@@ -113,13 +106,11 @@ public class SpawnProofManager
 		return this.generated;
 	}
 
-	/** The block ghosts are drawn as and placed with, or null until one is chosen. */
 	public BlockState getBlockState()
 	{
 		return this.blockState;
 	}
 
-	/** True when the chosen block lights spots above the spawn level, so ghosts are planned sources instead of fills. */
 	private boolean isLightBlock()
 	{
 		return this.blockState != null && this.blockState.getLightEmission() > Configs.Generic.TORCH_MAX_SPAWN_LIGHT.get();
@@ -130,25 +121,21 @@ public class SpawnProofManager
 		return this.mode;
 	}
 
-	/** Light planning has its own, much wider area, since one source covers a lot of ground. */
 	public SpawnProofArea getArea()
 	{
 		return this.isLightPlanning() ? this.lightArea : this.areas.get(this.mode);
 	}
 
-	/** The radius option behind the current area. */
 	private ConfigOption.Int getRadius()
 	{
 		return this.isLightPlanning() ? Configs.Generic.LIGHT_PLAN_RADIUS : this.mode.getRadius();
 	}
 
-	/** True when spawn proof mode is planning light sources rather than fills. */
 	private boolean isLightPlanning()
 	{
 		return this.mode == SpawnProofMode.SPAWN_PROOF && this.isLightBlock();
 	}
 
-	/** Forget everything, for a world change. */
 	public void clear()
 	{
 		this.generated.clear();
@@ -160,13 +147,6 @@ public class SpawnProofManager
 		this.reachWarned = false;
 	}
 
-	/**
-	 * With the tool item in hand, mouse wheel with the tool-select key held
-	 * cycles the tool, and with Extend facing side selected the wheel alone
-	 * resizes the facing side. Cycling works while spawn proof is off too, so
-	 * a choice is never swallowed. Returns true when the scroll was used, so
-	 * the hotbar does not also change.
-	 */
 	public boolean onScroll(double yOffset)
 	{
 		Minecraft mc = Minecraft.getInstance();
@@ -194,7 +174,6 @@ public class SpawnProofManager
 		return false;
 	}
 
-	/** True with the toolItem in the main hand; a bare name like "stick" means the minecraft one. */
 	private boolean isHoldingTool(Minecraft mc)
 	{
 		String wanted = Configs.Generic.TOOL_ITEM.get().trim();
@@ -312,14 +291,6 @@ public class SpawnProofManager
 		}
 	}
 
-	/**
-	 * Use (right click, pressed or held) with the tool item while spawn
-	 * proofing runs the selected tool: place the aimed ghost, place every
-	 * ghost within reach, or take the off hand block as the ghost block. A
-	 * held click keeps going, so a fill grows outward as ghosts come into
-	 * reach. The click is always used, so vanilla does not place the off
-	 * hand block instead.
-	 */
 	public boolean onUse()
 	{
 		Minecraft mc = Minecraft.getInstance();
@@ -340,12 +311,6 @@ public class SpawnProofManager
 		return true;
 	}
 
-	/**
-	 * Aiming at a ghost with a block item in the off hand makes every ghost that block.
-	 * A block that gives off light turns the ghosts into planned light sources;
-	 * anything else must stop spawns. With no ghosts at all, because every spot
-	 * is lit, the click anywhere counts.
-	 */
 	private boolean chooseHeldBlock(Minecraft mc)
 	{
 		BlockPos target = this.findAimedGhost(mc);
@@ -384,7 +349,6 @@ public class SpawnProofManager
 		return true;
 	}
 
-	/** The state a block takes when placed on the floor, so buttons and levers do not preview on a wall. */
 	private static BlockState floorState(Block block)
 	{
 		BlockState state = block.defaultBlockState();
@@ -410,10 +374,6 @@ public class SpawnProofManager
 		return true;
 	}
 
-	/**
-	 * Runs the action with the chosen block in the main hand, pulled from
-	 * wherever it sits in the inventory, and puts things back afterwards.
-	 */
 	private void withChosenBlockInHand(Minecraft mc, boolean report, Runnable action)
 	{
 		BlockState chosen = this.blockState;
@@ -479,7 +439,6 @@ public class SpawnProofManager
 		}
 	}
 
-	/** Places on every ghost the player could reach, nearest first. */
 	private boolean placeAll(Minecraft mc, boolean report)
 	{
 		if (this.blockState == null)
@@ -548,7 +507,6 @@ public class SpawnProofManager
 		return true;
 	}
 
-	/** ", nearest 12 blocks north-east", or nothing when there is no ghost at all. */
 	private String describeNearest(Minecraft mc)
 	{
 		BlockPos here = mc.player.blockPosition();
@@ -579,7 +537,6 @@ public class SpawnProofManager
 		return ", nearest " + best + " blocks " + heading;
 	}
 
-	/** Creative mode: drop the stack into the selected slot for the action, then put the old stack back. */
 	private void withCreativeStack(Minecraft mc, ItemStack stack, Runnable action)
 	{
 		Inventory inventory = mc.player.getInventory();
@@ -594,7 +551,6 @@ public class SpawnProofManager
 		mc.gameMode.handleCreativeModeItemAdd(previous, containerSlot);
 	}
 
-	/** Index into the 36 non-equipment slots holding the item, hotbar first, or -1. */
 	private int findInventorySlot(Inventory inventory, Item item)
 	{
 		NonNullList<ItemStack> items = inventory.getNonEquipmentItems();
@@ -616,12 +572,6 @@ public class SpawnProofManager
 		mc.player.connection.send(new ServerboundSetCarriedItemPacket(slot));
 	}
 
-	/**
-	 * Places the block into the ghost's own position, like Litematica's easy
-	 * place: click the top of the block below, or a side neighbour when the
-	 * block below is the same single slab, since clicking that would merge
-	 * the two into a double slab instead of filling the ghost.
-	 */
 	private boolean placeAt(Minecraft mc, BlockPos target)
 	{
 		if (mc.level.getBlockState(target).canBeReplaced() == false)
@@ -630,7 +580,6 @@ public class SpawnProofManager
 			return false;
 		}
 
-		// The game refuses a block inside the player; do not keep asking.
 		if (mc.player.getBoundingBox().intersects(new AABB(target)))
 		{
 			return false;
@@ -650,7 +599,6 @@ public class SpawnProofManager
 			StencilClient.LOGGER.info("place target={} click={} face={} hit={} ok={} now={}", target, result.getBlockPos(), result.getDirection(), result.getLocation(), ok, mc.level.getBlockState(target));
 		}
 
-		// A refused ghost comes back on the next scan, not on the next tick.
 		if (ok == false)
 		{
 			this.generated.remove(target);
@@ -664,7 +612,6 @@ public class SpawnProofManager
 		return true;
 	}
 
-	/** A click on a neighbour's face that makes vanilla place into the target, or null. */
 	private BlockHitResult findPlacementClick(Minecraft mc, BlockPos target)
 	{
 		BlockPos below = target.below();
@@ -698,7 +645,6 @@ public class SpawnProofManager
 		return null;
 	}
 
-	/** True for a top or bottom slab of the chosen block, which a click on top would complete. */
 	private boolean isSingleSlabOfOurs(BlockState state)
 	{
 		return state.getBlock() == this.blockState.getBlock()
@@ -706,7 +652,6 @@ public class SpawnProofManager
 				&& state.getValue(SlabBlock.TYPE) != SlabType.DOUBLE;
 	}
 
-	/** The first ghost along the crosshair within reach, stepping a tenth of a block at a time. */
 	private BlockPos findAimedGhost(Minecraft mc)
 	{
 		Vec3 eye = mc.player.getEyePosition();
@@ -732,11 +677,6 @@ public class SpawnProofManager
 		return null;
 	}
 
-	/**
-	 * With commandReach set, raises the block interaction range by command while
-	 * the overlay is on, since the server drops placements past that range, and
-	 * resets it when the overlay goes off. Needs cheats or op; says so once.
-	 */
 	private void syncReach(Minecraft mc)
 	{
 		int desired = this.enabled ? Configs.Generic.COMMAND_REACH.get() : 0;
@@ -775,7 +715,6 @@ public class SpawnProofManager
 		}
 	}
 
-	/** Picks up a radius edited in the settings screen, which bypasses the hotkeys. */
 	private void syncRadius()
 	{
 		SpawnProofArea area = this.getArea();
@@ -788,10 +727,6 @@ public class SpawnProofManager
 		}
 	}
 
-	/**
-	 * Scans on a background thread so a wide light plan does not stall the
-	 * frame. Chunk reads take no lock in 26.3, and the sets are copied first.
-	 */
 	private void startScan(Level world, BlockPos center)
 	{
 		SpawnProofMode mode = this.mode;
@@ -810,7 +745,6 @@ public class SpawnProofManager
 			scan(world, center, mode, area, state, lights, radius, singleLayer, excluded, placed), Util.backgroundExecutor());
 	}
 
-	/** Swaps a finished scan in, minus anything placed or refused since it started. */
 	private void finishScan()
 	{
 		if (this.pendingScan == null || this.pendingScan.isDone() == false)
@@ -859,7 +793,6 @@ public class SpawnProofManager
 		return found;
 	}
 
-	/** Dark spawnable spots, then the fewest light blocks that cover them. */
 	private static Set<BlockPos> planLights(Level world, BlockPos center, SpawnProofArea area, BlockState state, int radius, Set<BlockPos> excluded, Set<BlockPos> placed)
 	{
 		int vertical = Math.min(radius, LIGHT_PLAN_VERTICAL_RADIUS);
@@ -875,7 +808,6 @@ public class SpawnProofManager
 		return planned;
 	}
 
-	/** True when the spot sits on a block we placed, or on the chosen block, so nothing stacks. */
 	private static boolean isOnOurBlock(Level world, BlockPos pos, BlockState state, Set<BlockPos> placed)
 	{
 		BlockPos below = pos.below();
@@ -888,10 +820,6 @@ public class SpawnProofManager
 		return state != null && world.getBlockState(below).getBlock() == state.getBlock();
 	}
 
-	/**
-	 * Gizmos added during the client tick are drawn by the level renderer until
-	 * the next tick replaces them, so every tick submits the full set again.
-	 */
 	private void emitGizmos(Minecraft mc)
 	{
 		if (this.generated.isEmpty())

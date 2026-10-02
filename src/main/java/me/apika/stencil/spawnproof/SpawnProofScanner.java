@@ -12,23 +12,13 @@ import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LayerLightEventListener;
 
-/**
- * Finds the positions a hostile mob could spawn at: a spawnable surface below,
- * a 1x2 column of empty space, and block light at or below the spawn level
- * (0 in vanilla). Pure world queries, no state of its own.
- */
 public class SpawnProofScanner
 {
-	/**
-	 * Every spawnable position within the area's footprint around the center,
-	 * spanning the given number of blocks up and down, clamped to the world height.
-	 */
 	public static Set<BlockPos> scan(Level world, BlockPos center, SpawnProofArea area, int verticalRadius, Set<BlockPos> excluded)
 	{
 		return scan(world, center, area, verticalRadius, 0, excluded);
 	}
 
-	/** As above, counting any spot lit at or below the given block light as spawnable. */
 	public static Set<BlockPos> scan(Level world, BlockPos center, SpawnProofArea area, int verticalRadius, int maxLight, Set<BlockPos> excluded)
 	{
 		int minY = Math.max(center.getY() - verticalRadius, world.getMinY());
@@ -61,10 +51,6 @@ public class SpawnProofScanner
 		return found;
 	}
 
-	/**
-	 * Every replaceable position on the center's own Y level within the area's
-	 * footprint, so a flat layer can be filled with whatever block is selected.
-	 */
 	public static Set<BlockPos> scanLayer(Level world, BlockPos center, SpawnProofArea area, Set<BlockPos> excluded)
 	{
 		int y = center.getY();
@@ -115,7 +101,6 @@ public class SpawnProofScanner
 			return false;
 		}
 
-		// Tall mobs need a second free block; spiders and other short mobs do not.
 		if (Configs.Generic.SPAWN_PROOF_LOW_GAPS.getValue() == false)
 		{
 			BlockPos above = pos.above();

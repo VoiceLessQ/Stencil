@@ -24,12 +24,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 
-/**
- * The settings screen: a row of category tabs, then one row per option with
- * its name on the left, an editor in the middle and a reset button on the
- * right. Values apply as they are changed and the file is written on close.
- * The search box filters every tab's options by name.
- */
 public class ConfigScreen extends Screen
 {
 	private static final int COLOR_BACKGROUND = 0xE0101010;
@@ -70,7 +64,6 @@ public class ConfigScreen extends Screen
 		}
 	}
 
-	/** One option's line: the editor, its reset button and where the label goes. */
 	private record Row(ConfigOption<?> option, AbstractWidget editor, TextButton reset, int baseY) { }
 
 	private final List<Row> rows = new ArrayList<>();
@@ -86,7 +79,6 @@ public class ConfigScreen extends Screen
 		super(Component.literal("Stencil Configs"));
 	}
 
-	/** Polled every client tick from the mod initializer; opens the screen on its hotkey. */
 	public static void tickHotkey(Minecraft mc)
 	{
 		OPEN_KEY.tick();
@@ -137,7 +129,6 @@ public class ConfigScreen extends Screen
 		this.buildRows();
 	}
 
-	/** The current tab's options, or every tab's options matching the search text. */
 	private List<ConfigOption<?>> getVisibleOptions()
 	{
 		if (this.search.isBlank())
@@ -162,7 +153,6 @@ public class ConfigScreen extends Screen
 		return matches;
 	}
 
-	/** Replaces the option rows without touching the tabs or the search box, so typing keeps its focus. */
 	private void rebuildRows()
 	{
 		this.stopCapture();
@@ -255,7 +245,6 @@ public class ConfigScreen extends Screen
 
 		box.setValue(valueText(option));
 
-		// Numbers and colours apply on commit, so a half-typed value is not clamped or rejected mid-edit.
 		if (option instanceof ConfigOption.Str str)
 		{
 			box.setResponder(str::setValue);
@@ -264,7 +253,6 @@ public class ConfigScreen extends Screen
 		return box;
 	}
 
-	/** What a text editor shows for the option's stored value. */
 	private static String valueText(ConfigOption<?> option)
 	{
 		if (option instanceof ConfigOption.Color color)
@@ -275,7 +263,6 @@ public class ConfigScreen extends Screen
 		return String.valueOf(option.getValue());
 	}
 
-	/** Applies every unfocused number or colour editor, then rewrites it to the stored (clamped, parsed) value. */
 	private void commitEditors()
 	{
 		for (Row row : this.rows)
@@ -338,7 +325,6 @@ public class ConfigScreen extends Screen
 		return Math.max(0, this.contentHeight - (this.listBottom - this.listTop));
 	}
 
-	/** Moves every row to its scrolled position and hides the ones fully outside the list. */
 	private void layoutRows()
 	{
 		for (Row row : this.rows)

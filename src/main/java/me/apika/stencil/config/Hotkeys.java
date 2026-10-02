@@ -4,10 +4,6 @@ import java.util.List;
 
 import me.apika.stencil.config.ConfigOption.Hotkey;
 
-/**
- * The keybinds. Litematica's M-prefixed style is kept so the muscle memory
- * transfers: M,C opens the settings, M,X toggles the overlay, and so on.
- */
 public class Hotkeys
 {
 	public static final Hotkey OPEN_GUI_SETTINGS = new Hotkey("openGuiSettings", "M,C");
@@ -28,7 +24,6 @@ public class Hotkeys
 			TOOL_SELECT
 	);
 
-	/** Another hotkey bound to exactly the same keys, or null if the keys are free. */
 	public static Hotkey findConflict(Hotkey hotkey)
 	{
 		String keys = hotkey.getKeysAsString();

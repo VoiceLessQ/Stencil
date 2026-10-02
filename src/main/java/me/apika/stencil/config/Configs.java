@@ -8,11 +8,6 @@ import me.apika.stencil.config.ConfigOption.Dbl;
 import me.apika.stencil.config.ConfigOption.Int;
 import me.apika.stencil.config.ConfigOption.Str;
 
-/**
- * The settings, grouped into the same categories Litematica uses, with the
- * same JSON keys where an option has a Litematica counterpart. Hotkeys are
- * their own category and live in {@link Hotkeys}.
- */
 public class Configs
 {
 	private static final String GENERIC = "generic";

@@ -4,7 +4,6 @@ import me.apika.stencil.config.ConfigOption;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
-/** Shows "true" in green or "false" in red, and flips on click. */
 public class BooleanWidget extends StencilWidget
 {
 	private static final int COLOR_TRUE = 0xFF55FF55;

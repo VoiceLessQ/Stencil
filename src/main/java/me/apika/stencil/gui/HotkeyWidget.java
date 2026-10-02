@@ -14,14 +14,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
-/**
- * Shows the key combination of a hotkey. Click it, then press the keys or
- * mouse buttons you want (they are collected in order as they go down), and
- * releasing any of them ends the capture. While capturing, Escape cancels and
- * keeps the old binding, Backspace or Delete clears it to NONE. A binding
- * shared with another hotkey is shown in red, since only one of them would
- * ever fire.
- */
 public class HotkeyWidget extends StencilWidget
 {
 	private static final int COLOR_CAPTURING = 0xFFFFAA00;
@@ -73,7 +65,6 @@ public class HotkeyWidget extends StencilWidget
 		return Hotkeys.findConflict(this.option) != null ? COLOR_CONFLICT : super.getLabelColor();
 	}
 
-	/** While capturing, every button anywhere on the screen is part of the combination. */
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
 	{
@@ -167,7 +158,6 @@ public class HotkeyWidget extends StencilWidget
 		this.capturing = false;
 	}
 
-	/** Ends the capture: keeps what was pressed, or the old binding if nothing was. Also used when the screen closes. */
 	public void stopCapture()
 	{
 		if (this.capturing == false)

@@ -24,11 +24,6 @@ import net.minecraft.resources.Identifier;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
 
-/**
- * Client-side /stencil command for the settings: list, get, set and reset any
- * option by its config name, the same names as in config/stencil.json. A set
- * value is checked like the settings screen checks it and saved at once.
- */
 public class StencilCommand
 {
 	private static final Pattern COLOR_PATTERN = Pattern.compile("#?[0-9a-fA-F]{6}");
@@ -127,7 +122,6 @@ public class StencilCommand
 		return 1;
 	}
 
-	/** Same warning the settings screen shows in red: another hotkey has the very same keys. */
 	private static void warnConflict(CommandContext<FabricClientCommandSource> context, ConfigOption<?> option)
 	{
 		if (option instanceof ConfigOption.Hotkey hotkey)
@@ -170,7 +164,6 @@ public class StencilCommand
 		return option;
 	}
 
-	/** Case-insensitive, so "toolitem" finds toolItem. */
 	private static ConfigOption<?> find(String name)
 	{
 		for (ConfigOption<?> option : ConfigStorage.getAllOptions())
@@ -184,7 +177,6 @@ public class StencilCommand
 		return null;
 	}
 
-	/** Parses and stores the value; false leaves the option unchanged. Numbers are clamped to their range. */
 	private static boolean apply(ConfigOption<?> option, String text)
 	{
 		try
@@ -221,7 +213,6 @@ public class StencilCommand
 			}
 			else if (option instanceof ConfigOption.Hotkey hotkey)
 			{
-				// "none" clears the binding, since an empty value cannot be typed.
 				if (text.equalsIgnoreCase("none"))
 				{
 					hotkey.setValue("");
@@ -239,7 +230,6 @@ public class StencilCommand
 			}
 			else if (option == Configs.Generic.TOOL_ITEM)
 			{
-				// Stored with the namespace, and only if the item exists, so a typo cannot quietly disable the tools.
 				Identifier id = Identifier.tryParse(text.indexOf(':') < 0 ? "minecraft:" + text : text);
 
 				if (id == null || BuiltInRegistries.ITEM.containsKey(id) == false)
@@ -315,7 +305,6 @@ public class StencilCommand
 		return "";
 	}
 
-	/** "toolItem = minecraft:stick", with the default when changed. */
 	private static String describe(ConfigOption<?> option)
 	{
 		String text = option.getName() + " = " + valueText(option);

@@ -17,16 +17,6 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 
-/**
- * Polls the keys of one {@link Hotkey} once per client tick. The key string is
- * Litematica's comma separated GLFW style names ("LEFT_SHIFT,UP"), translated
- * here to the vanilla key names so the game does the key code lookup.
- *
- * A keybind is held while every key in it is down, and triggers on the tick
- * where the last key goes down while the others are already held. Each hotkey
- * also has an unbound vanilla key mapping in the game's Controls screen; a key
- * bound there works alongside the chord.
- */
 public class Keybind
 {
 	private static final Set<Integer> pressedMouseButtons = new HashSet<>();
@@ -48,7 +38,6 @@ public class Keybind
 		this.hotkey = hotkey;
 	}
 
-	/** Adds a "Stencil" category to the game's Controls screen; call once during client init. */
 	public static void registerKeyMappings(List<ConfigOption<?>> hotkeys)
 	{
 		KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(StencilClient.MOD_ID, StencilClient.MOD_ID));
@@ -89,11 +78,6 @@ public class Keybind
 		return this.hotkey.getSettings().getAllowExtraKeys() || this.hasExtraKeys() == false;
 	}
 
-	/**
-	 * True while a modifier or mouse button outside this chord is down, so M,X
-	 * does not fire as Ctrl+M,X and a mouse bound hotkey does not fire on a
-	 * Shift click. Movement keys are left alone, so hotkeys work while walking.
-	 */
 	private boolean hasExtraKeys()
 	{
 		for (String name : MODIFIER_KEYS)
@@ -117,7 +101,6 @@ public class Keybind
 		return false;
 	}
 
-	/** True on the one tick the combination was completed. */
 	public boolean wasTriggered()
 	{
 		return this.triggered;
@@ -129,7 +112,6 @@ public class Keybind
 		this.triggered = false;
 		KeyMapping mapping = keyMappings.get(this.hotkey);
 
-		// Drain every queued press, so one tap does not fire again next tick.
 		while (mapping != null && mapping.consumeClick())
 		{
 			this.triggered = true;
@@ -184,7 +166,6 @@ public class Keybind
 		}
 	}
 
-	/** True if every name in a key string like "LEFT_SHIFT,UP" is a key the game knows. */
 	public static boolean isValidKeys(String str)
 	{
 		for (String name : str.split(","))
@@ -209,7 +190,6 @@ public class Keybind
 		return true;
 	}
 
-	/** "LEFT_SHIFT" to "key.keyboard.left.shift", "BUTTON_2" to "key.mouse.right". */
 	private static String toVanillaName(String name)
 	{
 		if (name.startsWith("BUTTON_"))
@@ -231,7 +211,6 @@ public class Keybind
 		return "key.keyboard." + name.toLowerCase().replace('_', '.');
 	}
 
-	/** The reverse: "key.keyboard.left.shift" to "LEFT_SHIFT", "key.mouse.right" to "BUTTON_2". */
 	public static String fromVanillaName(String name)
 	{
 		if (name.startsWith("key.mouse."))
@@ -255,7 +234,6 @@ public class Keybind
 		return name.startsWith("KEYPAD_") ? "KP_" + name.substring(7) : name;
 	}
 
-	/** Fed by the MouseHandler mixin on every button press and release. */
 	public static void onMouseButton(int button, boolean pressed)
 	{
 		if (Configs.Generic.DEBUG_LOGGING.getValue())

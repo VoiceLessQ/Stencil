@@ -3,12 +3,6 @@ package me.apika.stencil.spawnproof;
 import me.apika.stencil.config.ConfigOption;
 import net.minecraft.core.Direction;
 
-/**
- * The footprint of a scan around the player: how far it reaches to each of
- * the four sides, and whether the corners are kept (square) or cut (circle).
- * The extents are session state, not config; the radius hotkeys reset all
- * four to the mode's configured radius.
- */
 public class SpawnProofArea
 {
 	public enum Shape
@@ -43,7 +37,6 @@ public class SpawnProofArea
 	private int baseRadius;
 	private Shape shape = Shape.SQUARE;
 
-	/** The sides can grow no further than the radius option itself allows. */
 	public SpawnProofArea(ConfigOption.Int radius)
 	{
 		this.maxExtent = radius.getMaxValue();
@@ -86,7 +79,6 @@ public class SpawnProofArea
 		}
 	}
 
-	/** The radius the sides were last reset to, before any per-side adjustment. */
 	public int getBaseRadius()
 	{
 		return this.baseRadius;
@@ -103,7 +95,6 @@ public class SpawnProofArea
 	public int getMinZ(int centerZ) { return centerZ - this.north; }
 	public int getMaxZ(int centerZ) { return centerZ + this.south; }
 
-	/** Whether an offset from the center lies inside the footprint. */
 	public boolean contains(int dx, int dz)
 	{
 		int ex = dx >= 0 ? this.east : this.west;
@@ -119,7 +110,6 @@ public class SpawnProofArea
 			return true;
 		}
 
-		// Half-block padding so a radius of N still covers N blocks along the axes.
 		double rx = ex + 0.5;
 		double rz = ez + 0.5;
 		return (dx * dx) / (rx * rx) + (dz * dz) / (rz * rz) <= 1.0;
