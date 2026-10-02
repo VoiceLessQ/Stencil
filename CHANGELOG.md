@@ -28,6 +28,14 @@ research builds.
 - Change block takes the block from the off hand.
 - Extend facing side is a selected tool and uses the plain wheel.
 
+### Fixed
+
+- Hotkeys fired with extra modifiers held, so `Ctrl+M,X` toggled the overlay
+  and a mouse bound hotkey went off on a Shift click. A hotkey now only fires
+  when no Shift, Ctrl, Alt or Windows key or mouse button outside its own
+  keys is down. Movement keys do not count, and `toolSelect` still works with
+  right click held.
+
 ### Removed
 
 - The direct tool hotkeys `toolPlaceBlocks`, `toolPlaceAll`, `toolChangeBlock`

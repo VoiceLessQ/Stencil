@@ -31,6 +31,11 @@ public class Keybind
 {
 	private static final Set<Integer> pressedMouseButtons = new HashSet<>();
 	private static final Map<Hotkey, KeyMapping> keyMappings = new HashMap<>();
+	private static final List<String> MODIFIER_KEYS = List.of(
+			"key.keyboard.left.shift", "key.keyboard.right.shift",
+			"key.keyboard.left.control", "key.keyboard.right.control",
+			"key.keyboard.left.alt", "key.keyboard.right.alt",
+			"key.keyboard.left.win", "key.keyboard.right.win");
 
 	private final Hotkey hotkey;
 	private String parsedKeys = null;
@@ -81,7 +86,35 @@ public class Keybind
 			}
 		}
 
-		return true;
+		return this.hotkey.getSettings().getAllowExtraKeys() || this.hasExtraKeys() == false;
+	}
+
+	/**
+	 * True while a modifier or mouse button outside this chord is down, so M,X
+	 * does not fire as Ctrl+M,X and a mouse bound hotkey does not fire on a
+	 * Shift click. Movement keys are left alone, so hotkeys work while walking.
+	 */
+	private boolean hasExtraKeys()
+	{
+		for (String name : MODIFIER_KEYS)
+		{
+			InputConstants.Key key = InputConstants.getKey(name);
+
+			if (this.keys.contains(key) == false && isDown(key))
+			{
+				return true;
+			}
+		}
+
+		for (int button : pressedMouseButtons)
+		{
+			if (this.keys.contains(InputConstants.Type.MOUSE.getOrCreate(button)) == false)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/** True on the one tick the combination was completed. */

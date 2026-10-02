@@ -16,7 +16,7 @@ public class Hotkeys
 	public static final Hotkey SPAWN_PROOF_SHAPE = new Hotkey("spawnProofShape", "M,B");
 	public static final Hotkey SPAWN_PROOF_RADIUS_DECREASE = new Hotkey("spawnProofRadiusDecrease", "LEFT_SHIFT,DOWN");
 	public static final Hotkey SPAWN_PROOF_RADIUS_INCREASE = new Hotkey("spawnProofRadiusIncrease", "LEFT_SHIFT,UP");
-	public static final Hotkey TOOL_SELECT = new Hotkey("toolSelect", "LEFT_CONTROL");
+	public static final Hotkey TOOL_SELECT = new Hotkey("toolSelect", "LEFT_CONTROL", KeybindSettings.PRESS_ALLOWEXTRA);
 
 	public static final List<ConfigOption<?>> HOTKEY_LIST = List.of(
 			OPEN_GUI_SETTINGS,
