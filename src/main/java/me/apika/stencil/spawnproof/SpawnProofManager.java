@@ -20,6 +20,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gizmos.GizmoStyle;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.network.chat.Component;
@@ -65,7 +66,6 @@ public class SpawnProofManager
 	private final Keybind modeCycle = new Keybind(Hotkeys.SPAWN_PROOF_MODE);
 	private final Keybind shapeCycle = new Keybind(Hotkeys.SPAWN_PROOF_SHAPE);
 	private final Keybind toolSelect = new Keybind(Hotkeys.TOOL_SELECT);
-	private final Map<ToolAction, Keybind> toolKeys = new EnumMap<>(ToolAction.class);
 	private final Keybind radiusIncrease = new Keybind(Hotkeys.SPAWN_PROOF_RADIUS_INCREASE);
 	private final Keybind radiusDecrease = new Keybind(Hotkeys.SPAWN_PROOF_RADIUS_DECREASE);
 
@@ -90,11 +90,6 @@ public class SpawnProofManager
 		for (SpawnProofMode mode : SpawnProofMode.values())
 		{
 			this.areas.put(mode, new SpawnProofArea(mode.getRadius()));
-		}
-
-		for (ToolAction tool : ToolAction.values())
-		{
-			this.toolKeys.put(tool, new Keybind(tool.getHotkey()));
 		}
 	}
 
@@ -166,16 +161,17 @@ public class SpawnProofManager
 	}
 
 	/**
-	 * Mouse wheel with the tool-select key held cycles the tool; with the
-	 * extend-side key held it resizes the facing side. Works while spawn proof
-	 * is off too, so a choice is never swallowed. Returns true when the scroll
-	 * was used, so the hotbar does not also change.
+	 * With the tool item in hand, mouse wheel with the tool-select key held
+	 * cycles the tool, and with Extend facing side selected the wheel alone
+	 * resizes the facing side. Cycling works while spawn proof is off too, so
+	 * a choice is never swallowed. Returns true when the scroll was used, so
+	 * the hotbar does not also change.
 	 */
 	public boolean onScroll(double yOffset)
 	{
 		Minecraft mc = Minecraft.getInstance();
 
-		if (mc.player == null || mc.gui.screen() != null || yOffset == 0.0)
+		if (mc.player == null || mc.gui.screen() != null || yOffset == 0.0 || this.isHoldingTool(mc) == false)
 		{
 			return false;
 		}
@@ -189,7 +185,7 @@ public class SpawnProofManager
 			return true;
 		}
 
-		if (this.toolKeys.get(ToolAction.EXTEND_SIDE).isHeld())
+		if (this.action == ToolAction.EXTEND_SIDE && this.enabled)
 		{
 			this.extendFacingSide(mc, up);
 			return true;
@@ -198,18 +194,17 @@ public class SpawnProofManager
 		return false;
 	}
 
-	/** The tool whose key is held, else the selected one. */
-	private ToolAction activeTool()
+	/** True with the toolItem in the main hand; a bare name like "stick" means the minecraft one. */
+	private boolean isHoldingTool(Minecraft mc)
 	{
-		for (ToolAction tool : ToolAction.values())
+		String wanted = Configs.Generic.TOOL_ITEM.get().trim();
+
+		if (wanted.indexOf(':') < 0)
 		{
-			if (this.toolKeys.get(tool).isHeld())
-			{
-				return tool;
-			}
+			wanted = "minecraft:" + wanted;
 		}
 
-		return this.action;
+		return BuiltInRegistries.ITEM.getKey(mc.player.getMainHandItem().getItem()).toString().equals(wanted);
 	}
 
 	private void extendFacingSide(Minecraft mc, boolean up)
@@ -262,7 +257,6 @@ public class SpawnProofManager
 		this.modeCycle.tick();
 		this.shapeCycle.tick();
 		this.toolSelect.tick();
-		this.toolKeys.values().forEach(Keybind::tick);
 		this.radiusIncrease.tick();
 		this.radiusDecrease.tick();
 
@@ -278,16 +272,6 @@ public class SpawnProofManager
 		if (this.enabled == false)
 		{
 			return;
-		}
-
-		// Held place keys keep going, so a fill grows outward as ghosts come into reach.
-		if (this.toolKeys.get(ToolAction.PLACE_ALL).isHeld())
-		{
-			this.placeAll(mc, this.toolKeys.get(ToolAction.PLACE_ALL).wasTriggered());
-		}
-		else if (this.toolKeys.get(ToolAction.PLACE).isHeld())
-		{
-			this.placeAimed(mc);
 		}
 
 		if (this.modeCycle.wasTriggered())
@@ -329,31 +313,35 @@ public class SpawnProofManager
 	}
 
 	/**
-	 * Use (right click, pressed or held) while spawn proofing runs the active
-	 * tool: place the aimed ghost, place every ghost within reach, or take the
-	 * block in hand as the ghost block. Returns true when the click was used,
-	 * so vanilla does not also act on it.
+	 * Use (right click, pressed or held) with the tool item while spawn
+	 * proofing runs the selected tool: place the aimed ghost, place every
+	 * ghost within reach, or take the off hand block as the ghost block. A
+	 * held click keeps going, so a fill grows outward as ghosts come into
+	 * reach. The click is always used, so vanilla does not place the off
+	 * hand block instead.
 	 */
 	public boolean onUse()
 	{
 		Minecraft mc = Minecraft.getInstance();
 
-		if (this.enabled == false || mc.player == null || mc.level == null || mc.gui.screen() != null)
+		if (this.enabled == false || mc.player == null || mc.level == null || mc.gui.screen() != null || this.isHoldingTool(mc) == false)
 		{
 			return false;
 		}
 
-		return switch (this.activeTool())
+		switch (this.action)
 		{
 			case PLACE -> this.placeAimed(mc);
 			case PLACE_ALL -> this.placeAll(mc, true);
 			case CHANGE_BLOCK -> this.chooseHeldBlock(mc);
-			case EXTEND_SIDE -> false;
-		};
+			case EXTEND_SIDE -> {}
+		}
+
+		return true;
 	}
 
 	/**
-	 * Aiming at a ghost with a block item in hand makes every ghost that block.
+	 * Aiming at a ghost with a block item in the off hand makes every ghost that block.
 	 * A block that gives off light turns the ghosts into planned light sources;
 	 * anything else must stop spawns. With no ghosts at all, because every spot
 	 * is lit, the click anywhere counts.
@@ -367,9 +355,9 @@ public class SpawnProofManager
 			return false;
 		}
 
-		if (!(mc.player.getMainHandItem().getItem() instanceof BlockItem item))
+		if (!(mc.player.getOffhandItem().getItem() instanceof BlockItem item))
 		{
-			mc.player.sendOverlayMessage(Component.literal("Hold a block item to choose it"));
+			mc.player.sendOverlayMessage(Component.literal("Hold a block item in the off hand to choose it"));
 			return true;
 		}
 

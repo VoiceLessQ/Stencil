@@ -17,10 +17,6 @@ public class Hotkeys
 	public static final Hotkey SPAWN_PROOF_RADIUS_DECREASE = new Hotkey("spawnProofRadiusDecrease", "LEFT_SHIFT,DOWN");
 	public static final Hotkey SPAWN_PROOF_RADIUS_INCREASE = new Hotkey("spawnProofRadiusIncrease", "LEFT_SHIFT,UP");
 	public static final Hotkey TOOL_SELECT = new Hotkey("toolSelect", "LEFT_CONTROL");
-	public static final Hotkey TOOL_PLACE_BLOCKS = new Hotkey("toolPlaceBlocks", "");
-	public static final Hotkey TOOL_PLACE_ALL = new Hotkey("toolPlaceAll", "V");
-	public static final Hotkey TOOL_CHANGE_BLOCK = new Hotkey("toolChangeBlock", "C");
-	public static final Hotkey TOOL_EXTEND_SIDE = new Hotkey("toolExtendSide", "LEFT_ALT");
 
 	public static final List<ConfigOption<?>> HOTKEY_LIST = List.of(
 			OPEN_GUI_SETTINGS,
@@ -29,11 +25,7 @@ public class Hotkeys
 			SPAWN_PROOF_SHAPE,
 			SPAWN_PROOF_RADIUS_DECREASE,
 			SPAWN_PROOF_RADIUS_INCREASE,
-			TOOL_SELECT,
-			TOOL_PLACE_BLOCKS,
-			TOOL_PLACE_ALL,
-			TOOL_CHANGE_BLOCK,
-			TOOL_EXTEND_SIDE
+			TOOL_SELECT
 	);
 
 	/** Another hotkey bound to exactly the same keys, or null if the keys are free. */

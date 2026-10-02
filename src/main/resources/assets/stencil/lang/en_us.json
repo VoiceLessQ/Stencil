@@ -1,0 +1,10 @@
+{
+	"key.category.stencil.stencil": "Stencil",
+	"key.stencil.openGuiSettings": "Open settings",
+	"key.stencil.spawnProofToggle": "Spawn proof on/off",
+	"key.stencil.spawnProofMode": "Spawn proof mode",
+	"key.stencil.spawnProofShape": "Area shape",
+	"key.stencil.spawnProofRadiusDecrease": "Radius down",
+	"key.stencil.spawnProofRadiusIncrease": "Radius up",
+	"key.stencil.toolSelect": "Tool select (hold, scroll)"
+}

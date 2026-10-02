@@ -6,6 +6,7 @@ import me.apika.stencil.config.ConfigOption.Bool;
 import me.apika.stencil.config.ConfigOption.Color;
 import me.apika.stencil.config.ConfigOption.Dbl;
 import me.apika.stencil.config.ConfigOption.Int;
+import me.apika.stencil.config.ConfigOption.Str;
 
 /**
  * The settings, grouped into the same categories Litematica uses, with the
@@ -28,9 +29,11 @@ public class Configs
 		public static final Int LIGHT_PLAN_RADIUS = new Int(GENERIC, "lightPlanRadius", 32, 1, 64);
 		public static final Int COMMAND_REACH = new Int(GENERIC, "commandReach", 0, 0, 64);
 		public static final Int TORCH_MAX_SPAWN_LIGHT = new Int(GENERIC, "torchMaxSpawnLight", 0, 0, 14);
+		public static final Str TOOL_ITEM = new Str(GENERIC, "toolItem", "minecraft:stick");
 
 		public static final List<ConfigOption<?>> OPTIONS = List.of(
 				DEBUG_LOGGING,
+				TOOL_ITEM,
 				SPAWN_PROOF_LAYER_RADIUS,
 				SPAWN_PROOF_RADIUS,
 				SPAWN_PROOF_LOW_GAPS,

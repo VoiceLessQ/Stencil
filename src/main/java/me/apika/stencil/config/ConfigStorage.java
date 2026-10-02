@@ -34,6 +34,12 @@ public class ConfigStorage
 			new Category("Visuals", Configs.Visuals.OPTIONS)
 	);
 
+	/** Every option in every category, for lookup by name. */
+	public static List<ConfigOption<?>> getAllOptions()
+	{
+		return CATEGORIES.stream().flatMap(category -> category.options().stream()).toList();
+	}
+
 	public static Path getConfigFile()
 	{
 		return FabricLoader.getInstance().getConfigDir().resolve(StencilClient.MOD_ID + ".json");

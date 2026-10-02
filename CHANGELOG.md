@@ -7,6 +7,30 @@ research builds.
 
 ## [Unreleased]
 
+### Added
+
+- `toolItem` option (`minecraft:stick`): the item that must be in the main hand
+  for the tools to work.
+- Every hotkey is also listed under Stencil in the game's Options, Controls, Key
+  Binds screen, unbound by default. A key bound there works alongside the
+  chord set in Stencil's own settings.
+- Client-side `/stencil` command: `list`, `get <option>`, `set <option> <value>`
+  and `reset <option>` for every setting, with tab completion. Values are
+  checked and clamped like in the settings screen and saved at once.
+
+### Changed
+
+- Tools only work with the tool item in the main hand: `Left Ctrl` plus wheel
+  picks the tool and right click runs it. A right click with the tool item is
+  always taken while the overlay is on.
+- Change block takes the block from the off hand.
+- Extend facing side is a selected tool and uses the plain wheel.
+
+### Removed
+
+- The direct tool hotkeys `toolPlaceBlocks`, `toolPlaceAll`, `toolChangeBlock`
+  and `toolExtendSide`.
+
 ## [0.2.0-alpha] - 2026-09-21
 
 ### Added

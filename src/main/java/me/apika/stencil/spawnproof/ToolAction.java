@@ -1,41 +1,31 @@
 package me.apika.stencil.spawnproof;
 
-import me.apika.stencil.config.ConfigOption;
-import me.apika.stencil.config.Hotkeys;
-
 /**
- * The spawn proof tools. One is selected with the tool-select key plus the
- * wheel and runs on right click; each also has its own key that uses it
- * directly while held.
+ * The spawn proof tools. They only work with the tool item (a stick by
+ * default) in the main hand: the tool-select key plus the wheel picks one,
+ * and right click runs it.
  */
 public enum ToolAction
 {
 	/** Right click on a ghost places the current block there. */
-	PLACE        ("Place blocks", Hotkeys.TOOL_PLACE_BLOCKS),
-	/** Its key, or right click, places the current block from the inventory on every ghost within reach. */
-	PLACE_ALL    ("Place all", Hotkeys.TOOL_PLACE_ALL),
-	/** Right click on a ghost with a block in hand makes every ghost that block. */
-	CHANGE_BLOCK ("Change block", Hotkeys.TOOL_CHANGE_BLOCK),
+	PLACE        ("Place blocks"),
+	/** Right click places the current block from the inventory on every ghost within reach. */
+	PLACE_ALL    ("Place all"),
+	/** Right click on a ghost with a block in the off hand makes every ghost that block. */
+	CHANGE_BLOCK ("Change block"),
 	/** Wheel grows or shrinks only the side of the area the player is facing. */
-	EXTEND_SIDE  ("Extend facing side", Hotkeys.TOOL_EXTEND_SIDE);
+	EXTEND_SIDE  ("Extend facing side");
 
 	private final String displayName;
-	private final ConfigOption.Hotkey hotkey;
 
-	ToolAction(String displayName, ConfigOption.Hotkey hotkey)
+	ToolAction(String displayName)
 	{
 		this.displayName = displayName;
-		this.hotkey = hotkey;
 	}
 
 	public String getDisplayName()
 	{
 		return this.displayName;
-	}
-
-	public ConfigOption.Hotkey getHotkey()
-	{
-		return this.hotkey;
 	}
 
 	public ToolAction next()

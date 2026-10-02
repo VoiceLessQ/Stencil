@@ -1,16 +1,21 @@
 package me.apika.stencil.input;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
 import me.apika.stencil.StencilClient;
+import me.apika.stencil.config.ConfigOption;
 import me.apika.stencil.config.ConfigOption.Hotkey;
 import me.apika.stencil.config.Configs;
-import net.minecraft.client.Minecraft;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
 
 /**
  * Polls the keys of one {@link Hotkey} once per client tick. The key string is
@@ -18,11 +23,14 @@ import net.minecraft.client.Minecraft;
  * here to the vanilla key names so the game does the key code lookup.
  *
  * A keybind is held while every key in it is down, and triggers on the tick
- * where the last key goes down while the others are already held.
+ * where the last key goes down while the others are already held. Each hotkey
+ * also has an unbound vanilla key mapping in the game's Controls screen; a key
+ * bound there works alongside the chord.
  */
 public class Keybind
 {
 	private static final Set<Integer> pressedMouseButtons = new HashSet<>();
+	private static final Map<Hotkey, KeyMapping> keyMappings = new HashMap<>();
 
 	private final Hotkey hotkey;
 	private String parsedKeys = null;
@@ -35,7 +43,28 @@ public class Keybind
 		this.hotkey = hotkey;
 	}
 
+	/** Adds a "Stencil" category to the game's Controls screen; call once during client init. */
+	public static void registerKeyMappings(List<ConfigOption<?>> hotkeys)
+	{
+		KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(StencilClient.MOD_ID, StencilClient.MOD_ID));
+
+		for (ConfigOption<?> option : hotkeys)
+		{
+			if (option instanceof Hotkey hotkey)
+			{
+				KeyMapping mapping = new KeyMapping("key." + StencilClient.MOD_ID + "." + hotkey.getName(), InputConstants.UNKNOWN.getValue(), category);
+				keyMappings.put(hotkey, KeyMappingHelper.registerKeyMapping(mapping));
+			}
+		}
+	}
+
 	public boolean isHeld()
+	{
+		KeyMapping mapping = keyMappings.get(this.hotkey);
+		return (mapping != null && mapping.isDown()) || this.isChordHeld();
+	}
+
+	private boolean isChordHeld()
 	{
 		this.reparseIfChanged();
 
@@ -65,6 +94,13 @@ public class Keybind
 	{
 		this.reparseIfChanged();
 		this.triggered = false;
+		KeyMapping mapping = keyMappings.get(this.hotkey);
+
+		// Drain every queued press, so one tap does not fire again next tick.
+		while (mapping != null && mapping.consumeClick())
+		{
+			this.triggered = true;
+		}
 
 		if (this.keys.isEmpty())
 		{
@@ -75,7 +111,7 @@ public class Keybind
 
 		if (lastDown && this.lastKeyWasDown == false)
 		{
-			this.triggered = this.isHeld();
+			this.triggered |= this.isChordHeld();
 		}
 
 		this.lastKeyWasDown = lastDown;
