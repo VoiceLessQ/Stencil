@@ -151,6 +151,31 @@ public class Keybind
 		}
 	}
 
+	/** True if every name in a key string like "LEFT_SHIFT,UP" is a key the game knows. */
+	public static boolean isValidKeys(String str)
+	{
+		for (String name : str.split(","))
+		{
+			name = name.trim();
+
+			if (name.isEmpty())
+			{
+				return false;
+			}
+
+			try
+			{
+				InputConstants.getKey(toVanillaName(name));
+			}
+			catch (IllegalArgumentException e)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	/** "LEFT_SHIFT" to "key.keyboard.left.shift", "BUTTON_2" to "key.mouse.right". */
 	private static String toVanillaName(String name)
 	{

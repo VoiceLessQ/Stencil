@@ -16,7 +16,9 @@ research builds.
   chord set in Stencil's own settings.
 - Client-side `/stencil` command: `list`, `get <option>`, `set <option> <value>`
   and `reset <option>` for every setting, with tab completion. Values are
-  checked and clamped like in the settings screen and saved at once.
+  checked and clamped like in the settings screen and saved at once. Unknown
+  key names and item ids are refused, and a hotkey that clashes with another
+  gets the same warning as in the settings screen.
 
 ### Changed
 

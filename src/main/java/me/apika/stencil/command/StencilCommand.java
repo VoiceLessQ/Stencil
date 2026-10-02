@@ -12,9 +12,14 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import me.apika.stencil.config.ConfigOption;
 import me.apika.stencil.config.ConfigOptionValue;
 import me.apika.stencil.config.ConfigStorage;
+import me.apika.stencil.config.Configs;
+import me.apika.stencil.config.Hotkeys;
+import me.apika.stencil.input.Keybind;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal;
@@ -118,7 +123,22 @@ public class StencilCommand
 
 		ConfigStorage.save();
 		context.getSource().sendFeedback(Component.literal(describe(option)));
+		warnConflict(context, option);
 		return 1;
+	}
+
+	/** Same warning the settings screen shows in red: another hotkey has the very same keys. */
+	private static void warnConflict(CommandContext<FabricClientCommandSource> context, ConfigOption<?> option)
+	{
+		if (option instanceof ConfigOption.Hotkey hotkey)
+		{
+			ConfigOption.Hotkey conflict = Hotkeys.findConflict(hotkey);
+
+			if (conflict != null)
+			{
+				context.getSource().sendError(Component.literal("Conflicts with " + conflict.getName()));
+			}
+		}
 	}
 
 	private static int reset(CommandContext<FabricClientCommandSource> context)
@@ -133,6 +153,7 @@ public class StencilCommand
 		option.resetToDefault();
 		ConfigStorage.save();
 		context.getSource().sendFeedback(Component.literal(describe(option)));
+		warnConflict(context, option);
 		return 1;
 	}
 
@@ -201,7 +222,32 @@ public class StencilCommand
 			else if (option instanceof ConfigOption.Hotkey hotkey)
 			{
 				// "none" clears the binding, since an empty value cannot be typed.
-				hotkey.setValue(text.equalsIgnoreCase("none") ? "" : text.toUpperCase(Locale.ROOT).replace(" ", ""));
+				if (text.equalsIgnoreCase("none"))
+				{
+					hotkey.setValue("");
+					return true;
+				}
+
+				String keys = text.toUpperCase(Locale.ROOT).replace(" ", "");
+
+				if (Keybind.isValidKeys(keys) == false)
+				{
+					return false;
+				}
+
+				hotkey.setValue(keys);
+			}
+			else if (option == Configs.Generic.TOOL_ITEM)
+			{
+				// Stored with the namespace, and only if the item exists, so a typo cannot quietly disable the tools.
+				Identifier id = Identifier.tryParse(text.indexOf(':') < 0 ? "minecraft:" + text : text);
+
+				if (id == null || BuiltInRegistries.ITEM.containsKey(id) == false)
+				{
+					return false;
+				}
+
+				Configs.Generic.TOOL_ITEM.setValue(id.toString());
 			}
 			else if (option instanceof ConfigOption.Str str)
 			{
@@ -254,6 +300,16 @@ public class StencilCommand
 		if (option instanceof ConfigOption.Color)
 		{
 			return " (#RRGGBB)";
+		}
+
+		if (option instanceof ConfigOption.Hotkey)
+		{
+			return " (key names like LEFT_SHIFT,UP or M,X, or none)";
+		}
+
+		if (option == Configs.Generic.TOOL_ITEM)
+		{
+			return " (an item id like minecraft:stick)";
 		}
 
 		return "";
